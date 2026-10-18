@@ -49,6 +49,15 @@ export type ParticipantRecord = {
   workstationId: string;
 };
 
+export type ExamRecoverySession = {
+  version: 1;
+  participant: ParticipantRecord;
+  token: ExamToken;
+  currentToeflSection: ToeflSectionKey;
+  completedSections: ToeflSectionKey[];
+  sectionEndsAt: number;
+};
+
 export type EmbedSettings = {
   institutionName: string;
   toeflSections: {

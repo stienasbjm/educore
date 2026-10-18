@@ -38,6 +38,7 @@ import { AdminAuthError, SupabaseService } from './supabase';
 import type {
   ExamToken,
   ParticipantRecord,
+  ExamRecoverySession,
   EmbedSettings,
   ExamType,
   ToeflSectionKey,
@@ -47,26 +48,38 @@ import type {
 export function App() {
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>(StorageService.getTheme());
+  const [savedExamSession] = useState<ExamRecoverySession | null>(() => StorageService.getExamSession());
 
-  // Navigation Screens: 'login' | 'student_profile' | 'student_exam' | 'student_completed' | 'admin_dashboard'
-  const [currentScreen, setCurrentScreen] = useState<string>('login');
+  // Navigation Screens include recovery confirmation before a saved exam resumes.
+  const [currentScreen, setCurrentScreen] = useState<string>(savedExamSession ? 'student_resume' : 'login');
   const [loginMode, setLoginMode] = useState<'student' | 'admin'>('student');
 
   // Student State
   const [inputToken, setInputToken] = useState<string>('');
-  const [activeToken, setActiveToken] = useState<ExamToken | null>(null);
-  const [studentName, setStudentName] = useState<string>('');
-  const [studentNim, setStudentNim] = useState<string>('');
-  const [studentProdi, setStudentProdi] = useState<ProdiType>('Akuntansi');
-  const [currentParticipant, setCurrentParticipant] = useState<ParticipantRecord | null>(null);
+  const [activeToken, setActiveToken] = useState<ExamToken | null>(savedExamSession?.token ?? null);
+  const [studentName, setStudentName] = useState<string>(savedExamSession?.participant.name ?? '');
+  const [studentNim, setStudentNim] = useState<string>(savedExamSession?.participant.nim ?? '');
+  const [studentProdi, setStudentProdi] = useState<ProdiType>(savedExamSession?.participant.prodi ?? 'Akuntansi');
+  const [currentParticipant, setCurrentParticipant] = useState<ParticipantRecord | null>(
+    savedExamSession?.participant ?? null,
+  );
   const [tokenError, setTokenError] = useState<string>('');
+  const [resumeNim, setResumeNim] = useState<string>('');
+  const [resumeError, setResumeError] = useState<string>('');
 
   // TOEFL 3-Section Progression
-  const [currentToeflSection, setCurrentToeflSection] = useState<ToeflSectionKey>('listening');
-  const [completedSections, setCompletedSections] = useState<ToeflSectionKey[]>([]);
+  const [currentToeflSection, setCurrentToeflSection] = useState<ToeflSectionKey>(
+    savedExamSession?.currentToeflSection ?? 'listening',
+  );
+  const [completedSections, setCompletedSections] = useState<ToeflSectionKey[]>(
+    savedExamSession?.completedSections ?? [],
+  );
 
   // Section Countdown Timer (in seconds)
-  const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
+  const [sectionEndsAt, setSectionEndsAt] = useState<number>(savedExamSession?.sectionEndsAt ?? 0);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(() =>
+    savedExamSession ? Math.max(0, Math.ceil((savedExamSession.sectionEndsAt - Date.now()) / 1000)) : 0,
+  );
   const [timerRunning, setTimerRunning] = useState<boolean>(false);
 
   // Admin State
@@ -156,20 +169,22 @@ export function App() {
 
   // Section Countdown Timer Engine
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (timerRunning && remainingSeconds > 0) {
-      interval = setInterval(() => {
-        setRemainingSeconds((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [timerRunning, remainingSeconds]);
+    if (!timerRunning || sectionEndsAt <= 0) return;
+
+    const updateRemainingTime = () => {
+      const seconds = Math.max(0, Math.ceil((sectionEndsAt - Date.now()) / 1000));
+      setRemainingSeconds(seconds);
+      if (seconds === 0) setTimerRunning(false);
+    };
+
+    updateRemainingTime();
+    const interval = setInterval(updateRemainingTime, 1000);
+    document.addEventListener('visibilitychange', updateRemainingTime);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', updateRemainingTime);
+    };
+  }, [sectionEndsAt, timerRunning]);
 
   // Format seconds to mm:ss
   const formatTime = (totalSeconds: number) => {
@@ -200,6 +215,47 @@ export function App() {
 
     setActiveToken(token);
     setCurrentScreen('student_profile');
+  };
+
+  const handleResumeExam = (e: React.FormEvent) => {
+    e.preventDefault();
+    setResumeError('');
+
+    const session = StorageService.getExamSession();
+    if (!session || session.participant.status !== 'in_progress') {
+      StorageService.clearExamSession();
+      setCurrentScreen('login');
+      void Swal.fire({
+        icon: 'error',
+        title: 'Sesi ujian tidak ditemukan',
+        text: 'Silakan masukkan token ujian atau hubungi pengawas untuk mendapatkan bantuan.',
+      });
+      return;
+    }
+
+    if (resumeNim.trim().toLowerCase() !== session.participant.nim.trim().toLowerCase()) {
+      setResumeError('NIM tidak sesuai dengan peserta pada sesi ujian yang tersimpan.');
+      return;
+    }
+
+    setActiveToken(session.token);
+    setStudentName(session.participant.name);
+    setStudentNim(session.participant.nim);
+    setStudentProdi(session.participant.prodi);
+    setCurrentParticipant(session.participant);
+    const localParticipants = StorageService.getParticipants();
+    const participantExists = localParticipants.some((participant) => participant.id === session.participant.id);
+    if (!participantExists) {
+      StorageService.saveParticipants([session.participant, ...localParticipants]);
+    }
+    setParticipants(StorageService.getParticipants());
+    setCurrentToeflSection(session.currentToeflSection);
+    setCompletedSections(session.completedSections);
+    setSectionEndsAt(session.sectionEndsAt);
+    setRemainingSeconds(Math.max(0, Math.ceil((session.sectionEndsAt - Date.now()) / 1000)));
+    setTimerRunning(true);
+    setCurrentScreen('student_exam');
+    void SupabaseService.upsertParticipant(session.participant);
   };
 
   // Handler: Student Complete Profile & Enter Exam
@@ -238,37 +294,66 @@ export function App() {
     // Save to local & sync to Supabase
     setCurrentParticipant(newRecord);
     setParticipants(StorageService.getParticipants());
-    SupabaseService.insertParticipant(newRecord);
 
+    let sectionDurationSeconds: number;
     if (examType === 'toefl') {
       setCurrentToeflSection('listening');
       setCompletedSections([]);
       const listeningMinutes = embedSettings.toeflSections.listening.minutes || 35;
-      setRemainingSeconds(listeningMinutes * 60);
+      sectionDurationSeconds = listeningMinutes * 60;
     } else {
       const tpaMinutes = embedSettings.tpa.minutes || 60;
-      setRemainingSeconds(tpaMinutes * 60);
+      sectionDurationSeconds = tpaMinutes * 60;
     }
 
+    const endsAt = Date.now() + sectionDurationSeconds * 1000;
+    setSectionEndsAt(endsAt);
+    setRemainingSeconds(sectionDurationSeconds);
+    StorageService.saveExamSession({
+      version: 1,
+      participant: newRecord,
+      token: activeToken,
+      currentToeflSection: 'listening',
+      completedSections: [],
+      sectionEndsAt: endsAt,
+    });
+    void SupabaseService.upsertParticipant(newRecord);
     setTimerRunning(true);
     setCurrentScreen('student_exam');
   };
 
   // Switch to Next Section for TOEFL Like
   const handleNextToeflSection = (nextSec: ToeflSectionKey) => {
-    if (!completedSections.includes(currentToeflSection)) {
-      setCompletedSections([...completedSections, currentToeflSection]);
-    }
+    const nextCompletedSections = completedSections.includes(currentToeflSection)
+      ? completedSections
+      : [...completedSections, currentToeflSection];
+    setCompletedSections(nextCompletedSections);
     setIsExamMenuOpen(false);
     setCurrentToeflSection(nextSec);
     const secConfig = embedSettings.toeflSections[nextSec];
-    setRemainingSeconds(secConfig.minutes * 60);
+    const nextSectionEndsAt = Date.now() + secConfig.minutes * 60 * 1000;
+    setSectionEndsAt(nextSectionEndsAt);
+    setRemainingSeconds(Math.ceil((nextSectionEndsAt - Date.now()) / 1000));
     setTimerRunning(true);
 
     if (currentParticipant) {
-      StorageService.updateParticipantSection(currentParticipant.id, `Section: ${secConfig.shortName}`);
+      const currentSection = `Section: ${secConfig.shortName}`;
+      StorageService.updateParticipantSection(currentParticipant.id, currentSection);
+      const updatedParticipant = StorageService.getParticipants().find(
+        (participant) => participant.id === currentParticipant.id,
+      ) ?? { ...currentParticipant, currentSection };
+      const savedSession = StorageService.getExamSession();
+      if (savedSession) {
+        StorageService.saveExamSession({
+          ...savedSession,
+          participant: updatedParticipant,
+          currentToeflSection: nextSec,
+          completedSections: nextCompletedSections,
+          sectionEndsAt: nextSectionEndsAt,
+        });
+      }
       setParticipants(StorageService.getParticipants());
-      SupabaseService.updateParticipantSection(currentParticipant.id, `Section: ${secConfig.shortName}`);
+      void SupabaseService.upsertParticipant(updatedParticipant);
     }
   };
 
@@ -278,10 +363,11 @@ export function App() {
       const updated = StorageService.completeParticipantExam(currentParticipant.id);
       if (updated) {
         setCurrentParticipant(updated);
-        SupabaseService.updateParticipantCompletion(currentParticipant.id, new Date().toISOString());
+        void SupabaseService.upsertParticipant(updated);
       }
       setParticipants(StorageService.getParticipants());
     }
+    StorageService.clearExamSession();
     setTimerRunning(false);
     setIsFinishConfirmModalOpen(false);
     setCurrentScreen('student_completed');
@@ -656,6 +742,100 @@ export function App() {
                 </button>
               </form>
             )}
+          </div>
+        </main>
+      )}
+
+      {currentScreen === 'student_resume' && savedExamSession && (
+        <main style={{ maxWidth: '580px', margin: '3.5rem auto', padding: '0 1.25rem', width: '100%' }}>
+          <div className="clean-card">
+            <div style={{ marginBottom: '1.25rem' }}>
+              <span className="badge badge-active" style={{ marginBottom: '0.5rem' }}>
+                Sesi ujian ditemukan
+              </span>
+              <h2 style={{ fontSize: '1.35rem' }}>Lanjutkan Ujian</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                Sesi {savedExamSession.token.examType === 'toefl' ? 'TOEFL Like' : 'TPA'} untuk{' '}
+                <strong>{savedExamSession.participant.name}</strong> tersimpan di browser ini.
+              </p>
+            </div>
+
+            <div
+              style={{
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-md)',
+                padding: '0.85rem',
+                marginBottom: '1.25rem',
+                fontSize: '0.85rem',
+              }}
+            >
+              <div><strong>Token:</strong> {savedExamSession.token.code}</div>
+              <div>
+                <strong>Bagian:</strong>{' '}
+                {savedExamSession.token.examType === 'toefl'
+                  ? embedSettings.toeflSections[savedExamSession.currentToeflSection].shortName
+                  : 'TPA'}
+              </div>
+              <div>
+                <strong>Sisa waktu:</strong>{' '}
+                {formatTime(Math.max(0, Math.ceil((savedExamSession.sectionEndsAt - Date.now()) / 1000)))}
+              </div>
+            </div>
+
+            <form onSubmit={handleResumeExam}>
+              <div className="form-group">
+                <label className="form-label">Verifikasi NIM untuk melanjutkan</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={resumeNim}
+                  onChange={(event) => setResumeNim(event.target.value)}
+                  placeholder="Masukkan NIM"
+                  autoComplete="off"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              {resumeError && (
+                <div
+                  role="alert"
+                  style={{
+                    background: 'rgba(220, 38, 38, 0.08)',
+                    border: '1px solid rgba(220, 38, 38, 0.25)',
+                    color: '#ef4444',
+                    padding: '0.65rem',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.825rem',
+                    marginBottom: '1rem',
+                  }}
+                >
+                  {resumeError}
+                </div>
+              )}
+
+              <div
+                style={{
+                  background: 'rgba(217, 119, 6, 0.08)',
+                  border: '1px solid rgba(217, 119, 6, 0.25)',
+                  borderRadius: 'var(--radius-md)',
+                  color: 'var(--text-muted)',
+                  padding: '0.75rem',
+                  marginBottom: '1.25rem',
+                  fontSize: '0.78rem',
+                }}
+              >
+                Posisi ujian dan timer dipulihkan dari browser ini. Jawaban yang belum dikirim berada di
+                Google Form dan tidak dapat dibaca atau disimpan oleh EduCore; pemulihannya bergantung
+                pada fitur draf Google Form dan akun Google peserta. Kirim jawaban sebelum menutup
+                halaman bila memungkinkan.
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                Lanjutkan ke Ujian <ChevronRight size={16} />
+              </button>
+            </form>
           </div>
         </main>
       )}

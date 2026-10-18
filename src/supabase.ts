@@ -101,57 +101,34 @@ export const SupabaseService = {
     }
   },
 
-  async insertParticipant(record: ParticipantRecord): Promise<boolean> {
+  async upsertParticipant(record: ParticipantRecord): Promise<boolean> {
     try {
-      const { error } = await supabase.from('participants').insert([
-        {
-          id: record.id,
-          name: record.name,
-          nim: record.nim,
-          prodi: record.prodi,
-          exam_type: record.examType,
-          exam_name: record.examName,
-          token_code: record.tokenCode,
-          started_at: record.startedAt,
-          completed_at: record.completedAt || null,
-          status: record.status,
-          current_section: record.currentSection || null,
-          workstation_id: record.workstationId,
-        },
-      ]);
-      return !error;
+      const { error } = await supabase.from('participants').upsert(
+        [
+          {
+            id: record.id,
+            name: record.name,
+            nim: record.nim,
+            prodi: record.prodi,
+            exam_type: record.examType,
+            exam_name: record.examName,
+            token_code: record.tokenCode,
+            started_at: record.startedAt,
+            completed_at: record.completedAt || null,
+            status: record.status,
+            current_section: record.currentSection || null,
+            workstation_id: record.workstationId,
+          },
+        ],
+        { onConflict: 'id' },
+      );
+      if (error) {
+        console.warn('Supabase upsertParticipant failed; participant remains saved locally:', error);
+        return false;
+      }
+      return true;
     } catch (err) {
-      console.warn('Supabase insertParticipant error:', err);
-      return false;
-    }
-  },
-
-  async updateParticipantCompletion(id: string, completedAt: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('participants')
-        .update({
-          status: 'completed',
-          completed_at: completedAt,
-          current_section: 'Selesai Seluruh Ujian',
-        })
-        .eq('id', id);
-      return !error;
-    } catch (err) {
-      console.warn('Supabase updateParticipant error:', err);
-      return false;
-    }
-  },
-
-  async updateParticipantSection(id: string, currentSection: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('participants')
-        .update({ current_section: currentSection })
-        .eq('id', id);
-      return !error;
-    } catch (err) {
-      console.warn('Supabase updateParticipantSection error:', err);
+      console.warn('Supabase upsertParticipant failed; participant remains saved locally:', err);
       return false;
     }
   },

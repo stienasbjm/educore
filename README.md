@@ -11,6 +11,12 @@ npm run dev
 
 Buka URL Vite yang ditampilkan di terminal. Token demo awal adalah `STN-2025-LSTN1`. Masuk ke dashboard melalui tautan **Akses pengawas**, pilih **Buka dashboard demo**, lalu atur tiga URL Google Form untuk mencoba iframe. Data demo hanya tersimpan di browser. Tanpa URL Form, portal memakai lima soal contoh per bagian; nilainya bukan skor TOEFL resmi.
 
+## Pemulihan sesi ujian
+
+Saat peserta memulai ujian, EduCore menyimpan data peserta, token, bagian TOEFL/TPA, progres bagian, dan batas waktu bagian di `localStorage` browser. Jika tab ditutup atau halaman dimuat ulang, buka kembali EduCore pada browser/perangkat yang sama, masukkan NIM untuk verifikasi, lalu pilih **Lanjutkan ke Ujian**. Timer tetap berjalan selama aplikasi tertutup. Data sesi peserta juga disinkronkan ke Supabase; saat pemulihan, EduCore mencoba menyinkronkan kembali catatan peserta.
+
+Pemulihan ini tidak menyimpan jawaban yang belum dikirim dalam Google Form. Form berada di domain Google dan EduCore tidak dapat membaca kolom jawaban di dalam iframe. Aktifkan fitur draf Google Form dan minta peserta menggunakan akun Google bila draf perlu dipulihkan; pilihan paling andal adalah menekan **Kirim** sebelum menutup halaman. Menghapus data situs/browser, memakai mode privat, atau berpindah browser/perangkat dapat menghilangkan sesi lokal. Agar jawaban bisa dipulihkan lintas perangkat, soal dan jawaban harus dikelola serta disimpan oleh backend EduCore, bukan hanya disematkan dari Google Form.
+
 ## Konfigurasi Supabase
 
 1. Siapkan proyek Supabase dan jalankan `supabase_schema.sql` melalui SQL Editor.

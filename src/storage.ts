@@ -1,11 +1,66 @@
-import type { EmbedSettings, ExamToken, ParticipantRecord } from './types';
+import type { EmbedSettings, ExamRecoverySession, ExamToken, ParticipantRecord, ToeflSectionKey } from './types';
 
 const STORAGE_KEYS = {
   TOKENS: 'toefl_tpa_tokens_v4',
   PARTICIPANTS: 'toefl_tpa_participants_v4',
   SETTINGS: 'toefl_tpa_settings_v4',
   THEME: 'toefl_theme_mode',
+  EXAM_SESSION: 'educore_exam_session_v1',
 };
+
+const TOEFL_SECTIONS: ToeflSectionKey[] = ['listening', 'structure', 'reading'];
+
+function isToeflSectionKey(value: unknown): value is ToeflSectionKey {
+  return typeof value === 'string' && TOEFL_SECTIONS.includes(value as ToeflSectionKey);
+}
+
+function isParticipantRecord(value: unknown): value is ParticipantRecord {
+  if (!value || typeof value !== 'object') return false;
+  const record = value as Partial<ParticipantRecord>;
+  return (
+    typeof record.id === 'string' &&
+    typeof record.name === 'string' &&
+    typeof record.nim === 'string' &&
+    (record.prodi === 'Akuntansi' || record.prodi === 'Manajemen') &&
+    (record.examType === 'toefl' || record.examType === 'tpa') &&
+    typeof record.examName === 'string' &&
+    typeof record.tokenCode === 'string' &&
+    typeof record.startedAt === 'string' &&
+    record.status === 'in_progress' &&
+    typeof record.workstationId === 'string'
+  );
+}
+
+function isExamToken(value: unknown): value is ExamToken {
+  if (!value || typeof value !== 'object') return false;
+  const token = value as Partial<ExamToken>;
+  return (
+    typeof token.id === 'string' &&
+    typeof token.code === 'string' &&
+    typeof token.name === 'string' &&
+    (token.examType === 'toefl' || token.examType === 'tpa') &&
+    typeof token.isActive === 'boolean' &&
+    typeof token.createdAt === 'string' &&
+    typeof token.usedCount === 'number'
+  );
+}
+
+function isExamRecoverySession(value: unknown): value is ExamRecoverySession {
+  if (!value || typeof value !== 'object') return false;
+  const session = value as Partial<ExamRecoverySession>;
+  return (
+    session.version === 1 &&
+    isParticipantRecord(session.participant) &&
+    isExamToken(session.token) &&
+    session.participant.examType === session.token.examType &&
+    session.participant.tokenCode === session.token.code &&
+    isToeflSectionKey(session.currentToeflSection) &&
+    Array.isArray(session.completedSections) &&
+    session.completedSections.every(isToeflSectionKey) &&
+    typeof session.sectionEndsAt === 'number' &&
+    Number.isFinite(session.sectionEndsAt)
+  );
+}
 
 // Direct mapping of the user's Google Form shortlinks to their direct embeddable URLs
 const SHORTLINK_MAP: Record<string, string> = {
@@ -303,6 +358,29 @@ export const StorageService = {
       return participants[idx];
     }
     return undefined;
+  },
+
+  getExamSession(): ExamRecoverySession | null {
+    const stored = localStorage.getItem(STORAGE_KEYS.EXAM_SESSION);
+    if (!stored) return null;
+
+    try {
+      const parsed: unknown = JSON.parse(stored);
+      if (isExamRecoverySession(parsed)) return parsed;
+    } catch {
+      // A malformed local session must not prevent the login screen from loading.
+    }
+
+    localStorage.removeItem(STORAGE_KEYS.EXAM_SESSION);
+    return null;
+  },
+
+  saveExamSession(session: ExamRecoverySession): void {
+    localStorage.setItem(STORAGE_KEYS.EXAM_SESSION, JSON.stringify(session));
+  },
+
+  clearExamSession(): void {
+    localStorage.removeItem(STORAGE_KEYS.EXAM_SESSION);
   },
 
   clearParticipants(): void {
