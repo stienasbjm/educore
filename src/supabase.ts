@@ -3,6 +3,8 @@ import type { ExamToken, ParticipantRecord, EmbedSettings } from './types';
 
 export const SUPABASE_URL = 'https://qqjeajnrepmawqjqsuup.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_i2LzkWSxYnbXpoRjZfJ_gw_-CzvDEVv';
+const ADMIN_USERNAME = import.meta.env.VITE_ADMIN_USERNAME?.trim() ?? '';
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase() ?? '';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -11,7 +13,46 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 });
 
+export class AdminAuthError extends Error {
+  constructor(readonly code: 'not-configured' | 'invalid-credentials' | 'service-unavailable') {
+    super(code);
+    this.name = 'AdminAuthError';
+  }
+}
+
 export const SupabaseService = {
+  async signInAdmin(username: string, password: string): Promise<void> {
+    if (!ADMIN_USERNAME || !ADMIN_EMAIL) {
+      throw new AdminAuthError('not-configured');
+    }
+
+    if (username.trim() !== ADMIN_USERNAME) {
+      throw new AdminAuthError('invalid-credentials');
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: ADMIN_EMAIL,
+      password,
+    });
+
+    if (error) {
+      throw new AdminAuthError(error.status === 400 || error.status === 401
+        ? 'invalid-credentials'
+        : 'service-unavailable');
+    }
+
+    if (data.user.email?.toLowerCase() !== ADMIN_EMAIL) {
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) console.error('Supabase sign-out after admin identity mismatch failed:', signOutError);
+      throw new AdminAuthError('invalid-credentials');
+    }
+  },
+
+  async signOutAdmin(): Promise<void> {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  },
+
   // Check connection status
   async checkConnection(): Promise<boolean> {
     try {

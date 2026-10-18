@@ -165,9 +165,6 @@ const DEFAULT_PARTICIPANTS: ParticipantRecord[] = [
   },
 ];
 
-const ADMIN_USERNAME = import.meta.env.VITE_ADMIN_USERNAME?.trim() ?? '';
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? '';
-
 export function formatEmbedUrl(rawUrl: string): string {
   if (!rawUrl || !rawUrl.trim()) return '';
   let url = rawUrl.trim();
@@ -331,16 +328,6 @@ export const StorageService = {
 
   saveSettings(settings: EmbedSettings): void {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-  },
-
-  hasAdminCredentials(): boolean {
-    return Boolean(ADMIN_USERNAME && ADMIN_PASSWORD);
-  },
-
-  verifyAdmin(username: string, password: string): boolean {
-    return this.hasAdminCredentials() &&
-      ADMIN_USERNAME === username.trim() &&
-      ADMIN_PASSWORD === password;
   },
 
   exportParticipantsToCSV(): boolean {

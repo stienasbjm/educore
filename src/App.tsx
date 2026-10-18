@@ -32,7 +32,7 @@ import {
   Cloud
 } from 'lucide-react';
 import { StorageService, formatEmbedUrl } from './storage';
-import { SupabaseService } from './supabase';
+import { AdminAuthError, SupabaseService } from './supabase';
 import type {
   ExamToken,
   ParticipantRecord,
@@ -283,20 +283,42 @@ export function App() {
   };
 
   // Handler: Admin Login
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminError('');
-    if (!StorageService.hasAdminCredentials()) {
-      setAdminError('Login admin belum dikonfigurasi. Atur VITE_ADMIN_USERNAME dan VITE_ADMIN_PASSWORD.');
-    } else if (StorageService.verifyAdmin(adminUsername, adminPassword)) {
+    try {
+      await SupabaseService.signInAdmin(adminUsername, adminPassword);
       setCurrentScreen('admin_dashboard');
       setAdminPassword('');
-    } else {
-      setAdminError('Username atau kata sandi admin salah.');
+    } catch (error) {
+      console.error('Admin Supabase Auth sign-in failed:', error);
+      if (error instanceof AdminAuthError) {
+        if (error.code === 'not-configured') {
+          setAdminError('Login admin belum dikonfigurasi. Pastikan VITE_ADMIN_USERNAME dan VITE_ADMIN_EMAIL diatur.');
+        } else if (error.code === 'invalid-credentials') {
+          setAdminError('Username atau kata sandi salah, atau akun admin Supabase belum dikonfirmasi.');
+        } else {
+          setAdminError('Supabase Auth tidak dapat dihubungi. Periksa koneksi lalu coba lagi.');
+        }
+      } else {
+        setAdminError('Login admin gagal karena layanan autentikasi bermasalah.');
+      }
+      setAdminPassword('');
     }
   };
 
-  const handleAdminLogout = () => {
+  const handleAdminLogout = async () => {
+    try {
+      await SupabaseService.signOutAdmin();
+    } catch (error) {
+      console.error('Admin Supabase Auth sign-out failed:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Gagal keluar',
+        text: 'Sesi admin belum dapat diakhiri. Periksa koneksi lalu coba lagi.',
+      });
+      return;
+    }
     setCurrentScreen('login');
     setLoginMode('student');
   };

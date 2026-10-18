@@ -15,14 +15,15 @@ Buka URL Vite yang ditampilkan di terminal. Token demo awal adalah `STN-2025-LST
 
 1. Siapkan proyek Supabase dan jalankan `supabase_schema.sql` melalui SQL Editor.
 2. Pastikan URL proyek dan anon key pada `src/supabase.ts` menunjuk ke proyek yang benar.
-3. Salin `.env.example` menjadi `.env.local`. Atur `VITE_ADMIN_USERNAME` dan `VITE_ADMIN_PASSWORD` untuk login admin, serta sesuaikan `VITE_STATION_ID` dan `VITE_LISTENING_AUDIO_URL`.
-4. Jalankan `npm install` dan `npm run dev`.
+3. Di Supabase Dashboard, buat user admin di **Authentication → Users** dengan email `arief@stienas-ypb.ac.id`, atur kata sandi admin, lalu pastikan akun terkonfirmasi.
+4. Salin `.env.example` menjadi `.env.local`. Atur `VITE_ADMIN_USERNAME=labterpadu` dan `VITE_ADMIN_EMAIL=arief@stienas-ypb.ac.id`. Atur juga `VITE_STATION_ID` dan `VITE_LISTENING_AUDIO_URL`.
+5. Jalankan `npm install` dan `npm run dev`.
 
-Login admin saat ini diperiksa di browser; variabel `VITE_*` akan tertanam pada bundel aplikasi dan bukan tempat penyimpanan rahasia. Jangan mengandalkan login ini sebagai batas keamanan untuk data produksi. Lindungi operasi data dengan autentikasi serta Row Level Security Supabase yang sesuai sebelum membuka portal ke publik.
+Login admin diverifikasi melalui Supabase Auth menggunakan email akun yang dikonfigurasi; kata sandi tidak disimpan atau ditanam ke bundel aplikasi. Terapkan kebijakan Row Level Security Supabase yang membatasi operasi admin sebelum memakai data produksi.
 
 ## Deploy ke GitHub Pages
 
-Repository ini memakai sumber GitHub Pages dari branch `main`, folder `/docs`. Jalankan `npm run build`, lalu commit dan push perubahan di folder `docs/` bersama perubahan sumber. Output build sudah menggunakan base path `/testakademik/` dan menyertakan `.nojekyll` untuk deployment project Pages. File `.env.local` tidak ikut di-push, dan kredensial admin sengaja dikosongkan pada build produksi agar tidak bocor ke bundel publik. Login admin di client-side tidak dapat menjadi kontrol akses yang aman; gunakan Supabase Auth dan kebijakan RLS sebelum mengaktifkan akses admin produksi.
+Repository ini memakai sumber GitHub Pages dari branch `main`, folder `/docs`. Pastikan nilai `VITE_ADMIN_USERNAME` dan `VITE_ADMIN_EMAIL` sudah diatur sebelum `npm run build`, lalu commit dan push perubahan di folder `docs/` bersama perubahan sumber. Output build menggunakan base path `/testakademik/` dan menyertakan `.nojekyll`. File `.env.local` tidak ikut di-push; kata sandi hanya diverifikasi oleh Supabase Auth dan tidak masuk ke bundel. Terapkan RLS Supabase untuk membatasi akses data.
 
 ## Siapkan data produksi
 
