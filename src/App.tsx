@@ -296,7 +296,9 @@ export function App() {
         if (error.code === 'not-configured') {
           setAdminError('Login admin belum dikonfigurasi. Pastikan VITE_ADMIN_USERNAME dan VITE_ADMIN_EMAIL diatur.');
         } else if (error.code === 'invalid-credentials') {
-          setAdminError('Username atau kata sandi salah, atau akun admin Supabase belum dikonfirmasi.');
+          setAdminError('Login ditolak Supabase. Pastikan user arief@stienas-ypb.ac.id ada di proyek qqjeajnrepmawqjqsuup, emailnya terkonfirmasi, lalu coba kata sandi akun Supabase yang benar. Jika lupa, atur ulang kata sandi dari Supabase Dashboard.');
+        } else if (error.code === 'email-not-confirmed') {
+          setAdminError('Email akun admin belum dikonfirmasi. Konfirmasikan user arief@stienas-ypb.ac.id pada Supabase Dashboard lalu coba lagi.');
         } else {
           setAdminError('Supabase Auth tidak dapat dihubungi. Periksa koneksi lalu coba lagi.');
         }

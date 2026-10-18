@@ -21,6 +21,8 @@ Buka URL Vite yang ditampilkan di terminal. Token demo awal adalah `STN-2025-LST
 
 Login admin diverifikasi melalui Supabase Auth menggunakan email akun yang dikonfigurasi; kata sandi tidak disimpan atau ditanam ke bundel aplikasi. Terapkan kebijakan Row Level Security Supabase yang membatasi operasi admin sebelum memakai data produksi.
 
+Jika login ditolak, pastikan user `arief@stienas-ypb.ac.id` berada di proyek Supabase dengan project ref `qqjeajnrepmawqjqsuup`, status emailnya terkonfirmasi, dan gunakan kata sandi yang diset untuk akun Auth tersebut. Reset kata sandi atau konfirmasikan email dari Supabase Dashboard bila perlu.
+
 ## Deploy ke GitHub Pages
 
 Repository ini memakai sumber GitHub Pages dari branch `main`, folder `/docs`. Pastikan nilai `VITE_ADMIN_USERNAME` dan `VITE_ADMIN_EMAIL` sudah diatur sebelum `npm run build`, lalu commit dan push perubahan di folder `docs/` bersama perubahan sumber. Output build menggunakan base path `/testakademik/` dan menyertakan `.nojekyll`. File `.env.local` tidak ikut di-push; kata sandi hanya diverifikasi oleh Supabase Auth dan tidak masuk ke bundel. Terapkan RLS Supabase untuk membatasi akses data.

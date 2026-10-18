@@ -14,7 +14,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 export class AdminAuthError extends Error {
-  constructor(readonly code: 'not-configured' | 'invalid-credentials' | 'service-unavailable') {
+  constructor(readonly code: 'not-configured' | 'invalid-credentials' | 'email-not-confirmed' | 'service-unavailable') {
     super(code);
     this.name = 'AdminAuthError';
   }
@@ -36,9 +36,13 @@ export const SupabaseService = {
     });
 
     if (error) {
-      throw new AdminAuthError(error.status === 400 || error.status === 401
-        ? 'invalid-credentials'
-        : 'service-unavailable');
+      if (error.code === 'email_not_confirmed' || error.code === 'email_not_verified') {
+        throw new AdminAuthError('email-not-confirmed');
+      }
+      if (error.status === 400 || error.status === 401) {
+        throw new AdminAuthError('invalid-credentials');
+      }
+      throw new AdminAuthError('service-unavailable');
     }
 
     if (data.user.email?.toLowerCase() !== ADMIN_EMAIL) {
