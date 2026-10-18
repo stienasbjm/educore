@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+
+<html lang="id"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"inverse-primary":"#ffb77d","surface-container-high":"#e6e8ea","on-primary-fixed-variant":"#6e3900","inverse-on-surface":"#eff1f3","tertiary-fixed-dim":"#68dba9","primary-container":"#b15f00","on-primary-fixed":"#2f1500","tertiary":"#006948","on-primary-container":"#fffbff","primary-fixed":"#ffdcc3","background":"#f7f9fb","surface-container-low":"#f2f4f6","surface-tint":"#904d00","secondary-fixed":"#dae2fd","on-tertiary-fixed":"#002114","outline-variant":"#dbc2b0","on-tertiary-fixed-variant":"#005137","tertiary-fixed":"#85f8c4","on-secondary-container":"#5c647a","on-surface":"#191c1e","surface":"#f7f9fb","surface-bright":"#f7f9fb","surface-dim":"#d8dadc","on-error-container":"#93000a","surface-variant":"#e0e3e5","on-tertiary-container":"#f5fff7","inverse-surface":"#2d3133","primary":"#8d4b00","error":"#ba1a1a","primary-fixed-dim":"#ffb77d","on-secondary":"#ffffff","on-tertiary":"#ffffff","on-background":"#191c1e","surface-container-lowest":"#ffffff","outline":"#887364","on-surface-variant":"#554336","on-secondary-fixed":"#131b2e","secondary-container":"#dae2fd","on-error":"#ffffff","secondary-fixed-dim":"#bec6e0","on-primary":"#ffffff","surface-container":"#eceef0","secondary":"#565e74","surface-container-highest":"#e0e3e5","tertiary-container":"#00855d","error-container":"#ffdad6","on-secondary-fixed-variant":"#3f465c"},borderRadius:{DEFAULT:"0.125rem",lg:"0.25rem",xl:"0.5rem",full:"0.75rem"},spacing:{"space-lg":"1.5rem","space-xl":"2rem",margin:"1.5rem","space-sm":"0.5rem","space-xs":"0.25rem",gutter:"1.25rem","space-md":"1rem"},fontFamily:{"headline-sm":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"display-lg":["Plus Jakarta Sans"],"body-md":["Inter"],"label-lg":["Inter"],"label-mono":["Inter"],"headline-md":["Plus Jakarta Sans"],"label-md":["Inter"],"body-lg":["Inter"],"body-sm":["Inter"],"headline-lg-mobile":["Plus Jakarta Sans"]},fontSize:{"headline-sm":["18px",{lineHeight:"24px",fontWeight:"600"}],"headline-lg":["30px",{lineHeight:"38px",fontWeight:"700"}],"display-lg":["40px",{lineHeight:"48px",fontWeight:"700"}],"body-md":["15px",{lineHeight:"24px",fontWeight:"400"}],"label-lg":["14px",{lineHeight:"20px",fontWeight:"600"}],"label-mono":["14px",{lineHeight:"20px",letterSpacing:"0.05em",fontWeight:"600"}],"headline-md":["22px",{lineHeight:"28px",fontWeight:"600"}],"label-md":["12px",{lineHeight:"16px",fontWeight:"500"}],"body-lg":["16px",{lineHeight:"26px",fontWeight:"400"}],"body-sm":["13px",{lineHeight:"20px",fontWeight:"400"}],"headline-lg-mobile":["24px",{lineHeight:"32px",fontWeight:"700"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col justify-between"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest/95 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 w-full max-w-7xl mx-auto px-6 flex items-center justify-between"><div class="flex items-center gap-space-md"><img alt="logo stienasbjm.png" class="h-12 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U9ZAEJ1De9WeJeUhU-b8kkl0CQdTPI3kYy8j1BCQf9P0pcmq0MuupKYB4QGUN-pyS6P6r4F7hIzBCQx6TEYArENtJ_e20RK4aIPPL61Q0CPlMBgxfzZs9EZQXL87ZNieSCJWwJ0EAw3y9bhdCKxQjFE7he1PyOMK_954UefHvmZER-UQOq5zqHE4ag1ZOBTJ45LsRINuOlAQVqXVlXo9DPePajwjvxFkKBqVewa7p_y2jthiSVwIQ-gz0aZlj4_dBgVqaXfjfNFJs"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight uppercase">Portal Ujian TOEFL - STIE Nasional Banjarmasin</span><span class="font-label-md text-label-md text-on-surface-variant">Unit Pelaksana Teknis (UPT) Bahasa &amp; Sertifikasi Internasional</span></div></div><div class="flex items-center gap-space-lg"><nav class="hidden lg:flex items-center gap-space-md" data-active-classes="text-primary font-semibold"><a aria-current="page" class="transition-colors text-primary font-semibold" data-path="portal-autentikasi" href="#">Beranda Ujian</a><a class="font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors" data-path="panduan-teknis" href="#">Panduan Tata Tertib</a><a class="font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors" data-path="cek-perangkat-lab" href="#">Diagnostik Komputer</a></nav><div class="hidden sm:flex items-center gap-space-xs bg-tertiary-container/10 px-space-sm py-space-xs rounded-full"><span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span><span class="font-label-md text-label-md text-tertiary font-medium">Sistem CAT Aktif &amp; Terpantau</span></div><div class="hidden md:flex flex-col text-right"><span class="font-label-mono text-label-mono text-on-surface font-semibold">WITA (UTC+8)</span><span class="font-label-md text-label-md text-on-surface-variant">Server UPT-CAT-01</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-20 flex-grow bg-surface"><div class="flex flex-col w-full">
+<!-- Progress Stepper / Breadcrumbs -->
+<section class="w-full bg-surface-container-low shadow-sm">
+<div class="max-w-7xl mx-auto px-6 py-space-md">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-tertiary">verified_user</span>
+<span class="font-label-mono text-label-mono text-tertiary">SI-CAT PROTOKOL RESMI v4.8</span>
+<span class="text-outline-variant">/</span>
+<span class="font-label-md text-label-md">Sesi Verifikasi Identitas Ujian Terjadwal</span>
+</div>
+<div class="flex items-center gap-space-xs bg-surface-container-lowest px-space-sm py-space-xs rounded-full shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">schedule</span>
+<span class="font-label-md text-label-md text-on-surface">Batas Pengisian Form:</span>
+<span class="font-label-mono text-label-mono text-primary font-bold" id="countdown-timer">04:48</span>
+</div>
+</div>
+<!-- Modern Step Bar Indicator -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-sm mt-space-md">
+<!-- Step 1: Completed -->
+<div class="flex items-center gap-space-sm p-space-sm rounded-lg bg-surface-container-lowest shadow-sm">
+<div class="w-8 h-8 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-tertiary font-bold tracking-wider uppercase">Langkah 01 • Selesai</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold truncate">Otentikasi &amp; Validasi Token</span>
+</div>
+</div>
+<!-- Step 2: Active -->
+<div class="flex items-center gap-space-sm p-space-sm rounded-lg bg-primary-container text-on-primary-container shadow-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-lowest text-primary flex items-center justify-center font-label-mono font-bold text-[14px]">
+            2
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-primary-fixed uppercase tracking-wider font-bold">Langkah 02 • Berlangsung</span>
+<span class="font-body-sm text-body-sm text-on-primary-container font-semibold truncate">Konfirmasi &amp; Biodata Peserta</span>
+</div>
+<span class="ml-auto w-2 h-2 rounded-full bg-primary-fixed animate-ping"></span>
+</div>
+<!-- Step 3: Upcoming -->
+<div class="flex items-center gap-space-sm p-space-sm rounded-lg bg-surface-container-high opacity-70">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant font-label-mono text-[14px]">
+            3
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Langkah 03 • Menunggu</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Pakta Integritas &amp; Sesi Section 1</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Content Workspace -->
+<div class="max-w-7xl mx-auto px-6 py-space-lg w-full">
+<!-- Verified Candidate Security Banner (BKN / CAT Identity Card Aesthetic) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm mb-space-lg">
+<div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-lg">
+<!-- Left: Student Info & Photo Verification Block -->
+<div class="flex flex-col sm:flex-row items-center sm:items-start gap-space-md w-full lg:w-auto">
+<div class="relative flex-shrink-0">
+<img class="w-24 h-28 object-cover rounded-lg shadow-sm" data-alt="Formal frontal academic biometric portrait of an Indonesian male college student wearing white collared formal shirt against institutional blue studio background with soft studio lighting, ultra-sharp detail." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfbkvjcIMv7Mq5AIKkv6nOVJtUKNZ0Q6IxAbJswPR55-9kmjSVCAHySjTRk9W-_JJNualjHdSI9C5EFlT0CkAyhGIt7Juth7k979A9MzV48d-7JxzvyCFKcJe7jG6-tu4vvVxbl5B73JlfRsPbUoR_bUH4wcH_UAYzupYDx0QVUQY7OT3m8ctRko1AEeH5aRVipa0TgGX8suu3wXUPKMxMB2FF9L2A14VF_R17vC2jnZQFftvbqB2FSQ"/>
+<div class="absolute -bottom-2 -right-2 bg-tertiary text-on-tertiary rounded-full p-1 shadow">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<div class="flex flex-col text-center sm:text-left">
+<div class="flex flex-wrap items-center justify-center sm:justify-start gap-space-xs mb-1">
+<span class="bg-tertiary-container/20 text-tertiary font-label-md text-label-md px-2 py-0.5 rounded-full font-semibold">
+                Terverifikasi CAT BKN-Server
+              </span>
+<span class="bg-surface-container-high text-on-surface-variant font-label-mono text-label-md px-2 py-0.5 rounded-full">
+                ID KARTU: STN-BJM-2025-0819
+              </span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold">MUHAMMAD FARHAN KURNIAWAN</h2>
+<div class="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1 text-on-surface-variant font-body-sm text-body-sm mt-0.5">
+<span>NIM: <strong class="text-on-surface font-label-mono">2110112044</strong></span>
+<span>•</span>
+<span>Jenjang: <strong class="text-on-surface">Strata 1 (S1)</strong></span>
+<span>•</span>
+<span>Kampus: <strong class="text-on-surface">Kampus Utama Banjarmasin</strong></span>
+</div>
+</div>
+</div>
+<!-- Right: Session Security Diagnostics & Station Pill -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm w-full lg:w-auto bg-surface-container-low p-space-md rounded-lg">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Token Ujian Aktif</span>
+<span class="font-label-mono text-label-mono text-primary font-bold">STN-2025-LSTN1</span>
+<span class="font-body-sm text-[11px] text-tertiary font-medium">Validasi Berhasil</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Alokasi Laboratorium</span>
+<span class="font-label-mono text-label-mono text-on-surface font-semibold">Lab Komputer 03</span>
+<span class="font-body-sm text-[11px] text-on-surface-variant">Stasiun Meja: <strong>PC-018</strong></span>
+</div>
+<div class="flex flex-col col-span-2 sm:col-span-1">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Jadwal Sesi Ujian</span>
+<span class="font-label-mono text-label-mono text-on-surface font-semibold">08:30 - 10:30 WITA</span>
+<span class="font-body-sm text-[11px] text-secondary">Durasi Bersih 120 Menit</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Biodata Confirmation Layout Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Primary Form Container (8 Cols) -->
+<div class="lg:col-span-8 flex flex-col gap-space-lg">
+<!-- Form Section Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-xl shadow-sm">
+<div class="flex items-center justify-between pb-space-sm mb-space-md">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Data Registrasi &amp; Penertiban Sertifikat</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Pastikan nama, program studi, dan kontak telah sesuai. Data ini akan dicetak langsung pada lembar sertifikat resmi TOEFL Institutional Testing Program (ITP).
+              </p>
+</div>
+<span class="material-symbols-outlined text-secondary text-[26px]">badge</span>
+</div>
+<form class="space-y-space-md" id="toefl-confirm-form" onsubmit="event.preventDefault();">
+<!-- Row 1: Locked Master Academic ID fields -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<label class="font-label-lg text-label-lg text-on-surface">Nama Lengkap (Sesuai Ijazah / KTP)</label>
+<span class="flex items-center gap-1 font-label-md text-label-md text-tertiary">
+<span class="material-symbols-outlined text-[14px]">lock</span> Data Terkunci SIAKAD
+                  </span>
+</div>
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container-low text-on-surface font-label-mono text-label-mono px-space-md py-space-sm rounded-lg cursor-not-allowed outline-none select-none pl-10" readonly="" type="text" value="Muhammad Farhan Kurniawan"/>
+<span class="material-symbols-outlined text-on-surface-variant absolute left-3 text-[18px]">person</span>
+</div>
+<span class="font-body-sm text-[12px] text-on-surface-variant">Gelar tidak dicantumkan pada sertifikat kebahasaan standar internasional.</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<label class="font-label-lg text-label-lg text-on-surface">Nomor Induk Mahasiswa (NIM)</label>
+<span class="flex items-center gap-1 font-label-md text-label-md text-tertiary">
+<span class="material-symbols-outlined text-[14px]">lock</span> Terverifikasi
+                  </span>
+</div>
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container-low text-on-surface font-label-mono text-label-mono px-space-md py-space-sm rounded-lg cursor-not-allowed outline-none select-none pl-10" readonly="" type="text" value="2110112044"/>
+<span class="material-symbols-outlined text-on-surface-variant absolute left-3 text-[18px]">pin</span>
+</div>
+<span class="font-body-sm text-[12px] text-on-surface-variant">Nomor registrasi unik untuk sinkronisasi nilai ke Pangkalan Data DIKTI.</span>
+</div>
+</div>
+<!-- Row 2: Study Program & Year -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-lg text-label-lg text-on-surface" for="prodi-select">
+                  Program Studi <span class="text-error">*</span>
+</label>
+<div class="relative flex items-center">
+<select class="w-full bg-surface-container text-on-surface font-body-md text-body-md px-space-md py-space-sm rounded-lg focus:bg-surface-container-lowest focus:ring-0 outline-none appearance-none cursor-pointer pl-10" id="prodi-select">
+<option selected="" value="S1 Manajemen Bisnis &amp; Keuangan">S1 Manajemen Bisnis &amp; Keuangan</option>
+<option value="S1 Akuntansi">S1 Akuntansi</option>
+<option value="D3 Keuangan &amp; Perbankan">D3 Keuangan &amp; Perbankan</option>
+<option value="S2 Magister Manajemen">S2 Magister Manajemen</option>
+</select>
+<span class="material-symbols-outlined text-on-surface-variant absolute left-3 text-[18px]">school</span>
+<span class="material-symbols-outlined text-on-surface-variant absolute right-3 pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-lg text-label-lg text-on-surface">
+                  Tahun Angkatan Kuliah <span class="text-error">*</span>
+</label>
+<div class="grid grid-cols-4 gap-2">
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" name="angkatan" type="radio" value="2021"/>
+<div class="text-center py-space-xs px-2 rounded-lg bg-surface-container text-on-surface font-label-mono text-label-md peer-checked:bg-primary peer-checked:text-on-primary font-bold shadow-sm transition-all">
+                      2021
+                    </div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="angkatan" type="radio" value="2022"/>
+<div class="text-center py-space-xs px-2 rounded-lg bg-surface-container text-on-surface font-label-mono text-label-md peer-checked:bg-primary peer-checked:text-on-primary font-bold shadow-sm transition-all">
+                      2022
+                    </div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="angkatan" type="radio" value="2023"/>
+<div class="text-center py-space-xs px-2 rounded-lg bg-surface-container text-on-surface font-label-mono text-label-md peer-checked:bg-primary peer-checked:text-on-primary font-bold shadow-sm transition-all">
+                      2023
+                    </div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="angkatan" type="radio" value="2024"/>
+<div class="text-center py-space-xs px-2 rounded-lg bg-surface-container text-on-surface font-label-mono text-label-md peer-checked:bg-primary peer-checked:text-on-primary font-bold shadow-sm transition-all">
+                      2024
+                    </div>
+</label>
+</div>
+<span class="font-body-sm text-[12px] text-on-surface-variant">Tahun registrasi akademik mahasiswa aktif.</span>
+</div>
+</div>
+<!-- Row 3: Test Goal / Category -->
+<div class="flex flex-col gap-1">
+<label class="font-label-lg text-label-lg text-on-surface" for="tujuan-tes">
+                Tujuan Mengikuti Ujian TOEFL Hari Ini <span class="text-error">*</span>
+</label>
+<div class="relative flex items-center">
+<select class="w-full bg-surface-container text-on-surface font-body-md text-body-md px-space-md py-space-sm rounded-lg focus:bg-surface-container-lowest outline-none appearance-none cursor-pointer pl-10" id="tujuan-tes">
+<option selected="" value="Syarat Sidang Skripsi / Yudisium">Syarat Wajib Sidang Skripsi / Ujian Yudisium (Skor Minimum: 450)</option>
+<option value="Kelulusan Wisuda">Kelengkapan Surat Keterangan Pendamping Ijazah (SKPI) Wisuda</option>
+<option value="Beasiswa &amp; Penempatan Kerja">Aplikasi Beasiswa Lanjutan / Penempatan Kerja Perbankan</option>
+<option value="Evaluasi Mandiri">Evaluasi Kompetensi Bahasa Inggris Mandiri (Placement Diagnostic)</option>
+</select>
+<span class="material-symbols-outlined text-on-surface-variant absolute left-3 text-[18px]">target</span>
+<span class="material-symbols-outlined text-on-surface-variant absolute right-3 pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Row 4: Score Delivery Channels -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-lg text-label-lg text-on-surface" for="wa-number">
+                  Nomor WhatsApp Aktif <span class="text-error">*</span>
+</label>
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container text-on-surface font-label-mono text-label-mono px-space-md py-space-sm rounded-lg focus:bg-surface-container-lowest outline-none pl-10" id="wa-number" placeholder="+62 8xx-xxxx-xxxx" type="tel" value="+62 813-4890-2134"/>
+<span class="material-symbols-outlined text-tertiary absolute left-3 text-[18px]">chat</span>
+</div>
+<span class="font-body-sm text-[12px] text-on-surface-variant">Untuk notifikasi instan e-Certificate &amp; skor konversi.</span>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-lg text-label-lg text-on-surface" for="campus-email">
+                  Email Institusi STIENAS <span class="text-error">*</span>
+</label>
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container text-on-surface font-label-mono text-label-mono px-space-md py-space-sm rounded-lg focus:bg-surface-container-lowest outline-none pl-10" id="campus-email" placeholder="nama.nim@stienas-bjm.ac.id" type="email" value="farhan.211011@stienas-bjm.ac.id"/>
+<span class="material-symbols-outlined text-primary absolute left-3 text-[18px]">mail</span>
+</div>
+<span class="font-body-sm text-[12px] text-on-surface-variant">Dokumen PDF resmi ber-tanda tangan digital dikirim ke email ini.</span>
+</div>
+</div>
+</form>
+</div>
+<!-- Integrity Declaration & Hardware Sound Check Block -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-start gap-space-md bg-surface-container-low p-space-md rounded-lg">
+<span class="material-symbols-outlined text-primary text-[28px] flex-shrink-0 mt-0.5">policy</span>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Pakta Integritas Ujian TOEFL CBT STIENAS</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-relaxed">
+                Ujian dilaksanakan di bawah pengawasan ketat CCTV dan sistem deteksi anti-kecurangan CAT. Peserta dilarang membuka tab lain, membawa gawai ke bilik ujian, menggunakan bantuan pihak ketiga (joki), atau mendokumentasikan soal. Segala bentuk pelanggaran berakibat pada pembatalan skor otomatis dan skorsing akademik selama 2 semester.
+              </p>
+</div>
+</div>
+<!-- Mandatory Integrity Checkbox -->
+<label class="flex items-start gap-space-sm cursor-pointer p-space-sm rounded-lg hover:bg-surface-container transition-colors">
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-0 mt-0.5 cursor-pointer accent-primary" id="integrity-checkbox" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface font-medium leading-relaxed">
+              Saya menyatakan dengan sadar dan sungguh-sungguh bahwa data di atas adalah benar milik saya, dan saya akan mengerjakan Ujian TOEFL ini secara mandiri, jujur, serta menaati seluruh tata tertib yang berlaku di Lab CBT STIE Nasional Banjarmasin.
+            </span>
+</label>
+<!-- Lab Audio Sound Check Interactive Panel -->
+<div class="bg-surface-container p-space-md rounded-xl flex flex-col md:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm w-full md:w-auto">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center flex-shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[24px]">headphones</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Uji Coba Suara Headset Lab</span>
+<span class="bg-tertiary-container/30 text-tertiary font-label-md text-label-md px-2 py-0.5 rounded-full font-semibold" id="audio-status-pill">
+                    Siap Diuji
+                  </span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Dengarkan sampel narasi pengarah sebelum memasuki Section 1 Listening.</span>
+</div>
+</div>
+<!-- Interactive Sound Trigger -->
+<div class="flex items-center gap-space-sm w-full md:w-auto justify-end">
+<button class="flex items-center gap-space-xs bg-surface-container-lowest text-on-surface px-space-md py-space-sm rounded-lg shadow-sm hover:bg-surface-bright transition-all font-label-lg text-label-lg active:scale-95" id="btn-test-sound" onclick="toggleTestSound()" type="button">
+<span class="material-symbols-outlined text-primary text-[20px]" id="sound-btn-icon">volume_up</span>
+<span id="sound-btn-label">Putar Sampel Audio</span>
+</button>
+</div>
+</div>
+<!-- Bottom Action Buttons Group -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-sm">
+<button class="w-full sm:w-auto flex items-center justify-center gap-space-xs px-space-lg py-space-sm rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors font-label-lg text-label-lg" onclick="window.history.back()" type="button">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              Batal / Keluar Sesi
+            </button>
+<button class="w-full sm:w-auto flex items-center justify-center gap-space-sm px-space-xl py-space-md rounded-lg bg-tertiary text-on-tertiary hover:bg-tertiary-container hover:text-on-tertiary-container shadow-md hover:shadow-lg transition-all font-label-lg text-label-lg font-bold tracking-wide active:scale-95" id="btn-submit-exam" onclick="proceedToExam()" type="button">
+<span class="material-symbols-outlined text-[20px]">play_circle</span>
+              Simpan Biodata &amp; Masuk Section 1 (Listening)
+            </button>
+</div>
+</div>
+</div>
+<!-- Right Column: Institutional Exam Guidelines & Session Metadata (4 Cols) -->
+<div class="lg:col-span-4 flex flex-col gap-space-md">
+<!-- Section Structure Overview Box -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm">
+<div class="flex items-center gap-space-xs text-on-surface mb-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">assignment</span>
+<h4 class="font-headline-sm text-headline-sm font-bold">Struktur Ujian TOEFL ITP</h4>
+</div>
+<div class="space-y-space-xs">
+<!-- Section 1 -->
+<div class="p-space-sm rounded-lg bg-primary-container/10 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-primary font-bold">Section 1: Listening Comprehension</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">50 Soal Pertanyaan • 35 Menit</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[20px]">graphic_eq</span>
+</div>
+<!-- Section 2 -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between opacity-80">
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold">Section 2: Structure &amp; Written Exp.</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">40 Soal Pertanyaan • 25 Menit</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">edit_note</span>
+</div>
+<!-- Section 3 -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between opacity-80">
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold">Section 3: Reading Comprehension</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">50 Soal Pertanyaan • 55 Menit</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">menu_book</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm">
+<span>Total Beban Soal: <strong>140 Butir</strong></span>
+<span>Total Waktu: <strong>115+5 Menit</strong></span>
+</div>
+</div>
+<!-- Live Lab CBT Diagnostics SVG Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm">
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Kualitas Koneksi &amp; Stasiun PC</span>
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-sm">
+            Telemetri perangkat komputer workstation PC-018 terhubung langsung ke Server Intranet UPT Bahasa STIENAS.
+          </p>
+<!-- Inline Technical SVG Network Chart -->
+<div class="bg-surface-container-low p-space-sm rounded-lg flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface-variant">Latensi Server Lokal</span>
+<span class="font-label-mono text-label-mono text-tertiary font-bold">3.2 ms (Sangat Stabil)</span>
+</div>
+<svg class="w-24 h-8 text-tertiary" fill="none" viewbox="0 0 100 30" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 24L15 20L30 22L45 12L60 16L75 8L90 14L100 9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+<circle cx="100" cy="9" fill="currentColor" r="3"></circle>
+</svg>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-space-xs">
+<div class="p-space-xs rounded bg-surface-container text-center">
+<span class="font-label-md text-[11px] text-on-surface-variant block">Paket Loss</span>
+<span class="font-label-mono text-label-md text-tertiary font-bold">0.00%</span>
+</div>
+<div class="p-space-xs rounded bg-surface-container text-center">
+<span class="font-label-md text-[11px] text-on-surface-variant block">Resolusi Layar</span>
+<span class="font-label-mono text-label-md text-on-surface font-bold">1920 × 1080</span>
+</div>
+</div>
+</div>
+<!-- Campus Contact Lab Proctor Widget -->
+<div class="bg-secondary-container/30 rounded-xl p-space-md shadow-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[24px]">support_agent</span>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Kendala Saat Validasi?</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Angkat tangan Anda di bilik atau laporkan ke pengawas ruangan meja utama.</span>
+</div>
+</div>
+<div class="mt-space-sm flex items-center justify-between text-on-surface-variant font-label-md text-label-md bg-surface-container-lowest/80 p-2 rounded-lg">
+<span>Pengawas Aktif Ruang 03:</span>
+<strong class="text-on-surface">Drs. H. M. Zaini, M.Pd.</strong>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Notification Toast Container (Dynamic UI Feedback) -->
+<div class="fixed bottom-6 right-6 hidden z-50 bg-inverse-surface text-inverse-on-surface px-space-md py-space-sm rounded-lg shadow-xl flex items-center gap-space-sm transition-all transform duration-300" id="toast-notification">
+<span class="material-symbols-outlined text-tertiary-fixed text-[20px]" id="toast-icon">check_circle</span>
+<span class="font-label-lg text-label-lg" id="toast-msg">Suara pengarah berhasil diputar pada headset.</span>
+</div>
+</div>
+<script>
+  // Countdown Timer Logic
+  let timeLeft = 288; // 4 mins 48 secs
+  const timerElement = document.getElementById('countdown-timer');
+
+  if (timerElement) {
+    setInterval(() => {
+      if (timeLeft <= 0) return;
+      timeLeft--;
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerElement.textContent = 
+        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }, 1000);
+  }
+
+  // Audio Test Toggle Simulator
+  let isPlaying = false;
+  let audioContext = null;
+
+  function toggleTestSound() {
+    const btnIcon = document.getElementById('sound-btn-icon');
+    const btnLabel = document.getElementById('sound-btn-label');
+    const statusPill = document.getElementById('audio-status-pill');
+
+    if (!isPlaying) {
+      isPlaying = true;
+      btnIcon.textContent = 'pause_circle';
+      btnLabel.textContent = 'Berhenti Memutar...';
+      statusPill.className = 'bg-primary-fixed text-on-primary-fixed-variant font-label-md text-label-md px-2 py-0.5 rounded-full font-semibold';
+      statusPill.textContent = 'Memutar Suara Narator...';
+      
+      // Synthesize clean sinusoidal speech-like chime test tone
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          audioContext = new AudioCtx();
+          const osc = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, audioContext.currentTime); // Concert A
+          osc.frequency.exponentialRampToValueAtTime(880, audioContext.currentTime + 0.8);
+          
+          gain.gain.setValueAtTime(0.15, audioContext.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.2);
+          
+          osc.connect(gain);
+          gain.connect(audioContext.destination);
+          
+          osc.start();
+          osc.stop(audioContext.currentTime + 1.2);
+        }
+      } catch (e) {
+        // Fallback quiet
+      }
+
+      showToast('Memutar nada uji headset lab. Pastikan volume telah nyaman.', 'volume_up');
+
+      setTimeout(() => {
+        if (isPlaying) {
+          isPlaying = false;
+          btnIcon.textContent = 'volume_up';
+          btnLabel.textContent = 'Uji Coba Suara Lagi';
+          statusPill.className = 'bg-tertiary-container/30 text-tertiary font-label-md text-label-md px-2 py-0.5 rounded-full font-semibold';
+          statusPill.textContent = 'Audio Berfungsi Baik';
+        }
+      }, 2500);
+
+    } else {
+      isPlaying = false;
+      btnIcon.textContent = 'volume_up';
+      btnLabel.textContent = 'Putar Sampel Audio';
+      statusPill.className = 'bg-tertiary-container/30 text-tertiary font-label-md text-label-md px-2 py-0.5 rounded-full font-semibold';
+      statusPill.textContent = 'Siap Diuji';
+    }
+  }
+
+  // Toast Trigger Helper
+  function showToast(message, iconName) {
+    const toast = document.getElementById('toast-notification');
+    const toastMsg = document.getElementById('toast-msg');
+    const toastIcon = document.getElementById('toast-icon');
+
+    if (!toast) return;
+    toastMsg.textContent = message;
+    if (iconName) toastIcon.textContent = iconName;
+    toast.classList.remove('hidden');
+
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 3800);
+  }
+
+  // Proceed to Section 1 handler
+  function proceedToExam() {
+    const checkbox = document.getElementById('integrity-checkbox');
+    if (!checkbox.checked) {
+      alert('Mohon centang pakta integritas kejujuran ujian sebelum memulai.');
+      return;
+    }
+
+    const btn = document.getElementById('btn-submit-exam');
+    btn.innerHTML = `<span class="material-symbols-outlined text-[20px] animate-spin">sync</span> Menyiapkan Ruang Section 1...`;
+    btn.disabled = true;
+
+    showToast('Data biodata tersimpan. Mengalihkan ke lembar soal Listening...', 'task_alt');
+
+    setTimeout(() => {
+      window.location.href = '#section-1-listening';
+    }, 1200);
+  }
+</script></main><footer class="w-full bg-surface-container-low mt-space-xl"><div class="w-full max-w-7xl mx-auto px-6 py-space-lg"><div class="flex flex-col md:flex-row items-center justify-between gap-space-md"><div class="flex flex-col text-center md:text-left"><span class="font-headline-sm text-headline-sm text-on-surface">Sekolah Tinggi Ilmu Ekonomi Nasional (STIENAS) Banjarmasin</span><span class="font-body-sm text-body-sm text-on-surface-variant">Terakreditasi Baik Sekali oleh BAN-PT • UPT Pusat Pengembangan Bahasa &amp; Uji Kompetensi</span></div><div class="flex items-center gap-space-md bg-surface-container-lowest px-space-md py-space-sm rounded-lg shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col text-left"><span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Helpdesk Pengawas Lab CBT</span><span class="font-label-mono text-label-mono text-primary font-bold">+62 811-5000-891 / Pesawat 204</span></div></div></div><div class="mt-space-md pt-space-sm flex flex-col sm:flex-row items-center justify-between gap-space-xs"><span class="font-body-sm text-body-sm text-on-surface-variant">© 2024 UPT Bahasa STIE Nasional Banjarmasin. All Rights Reserved.</span><span class="font-label-md text-label-md text-on-surface-variant font-mono">Secure CAT Environment v4.8 • Banjarmasin, Kalimantan Selatan</span></div></div></footer></body></html>

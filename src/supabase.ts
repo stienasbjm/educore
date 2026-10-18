@@ -1,0 +1,258 @@
+import { createClient } from '@supabase/supabase-js';
+import type { ExamToken, ParticipantRecord, EmbedSettings } from './types';
+
+export const SUPABASE_URL = 'https://qqjeajnrepmawqjqsuup.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_i2LzkWSxYnbXpoRjZfJ_gw_-CzvDEVv';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
+
+export const SupabaseService = {
+  // Check connection status
+  async checkConnection(): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('tokens').select('id').limit(1);
+      if (error && error.code !== 'PGRST116') {
+        // Table might not exist or network error
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  // PARTICIPANTS SYNC
+  async fetchParticipants(): Promise<ParticipantRecord[] | null> {
+    try {
+      const { data, error } = await supabase
+        .from('participants')
+        .select('*')
+        .order('started_at', { ascending: false });
+
+      if (error || !data) return null;
+
+      return data.map((row) => ({
+        id: row.id,
+        name: row.name,
+        nim: row.nim,
+        prodi: row.prodi,
+        examType: row.exam_type,
+        examName: row.exam_name,
+        tokenCode: row.token_code,
+        startedAt: row.started_at,
+        completedAt: row.completed_at || undefined,
+        status: row.status,
+        currentSection: row.current_section || undefined,
+        workstationId: row.workstation_id || 'LAB-CBT',
+      }));
+    } catch (err) {
+      console.warn('Supabase fetchParticipants fallback to local:', err);
+      return null;
+    }
+  },
+
+  async insertParticipant(record: ParticipantRecord): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('participants').insert([
+        {
+          id: record.id,
+          name: record.name,
+          nim: record.nim,
+          prodi: record.prodi,
+          exam_type: record.examType,
+          exam_name: record.examName,
+          token_code: record.tokenCode,
+          started_at: record.startedAt,
+          completed_at: record.completedAt || null,
+          status: record.status,
+          current_section: record.currentSection || null,
+          workstation_id: record.workstationId,
+        },
+      ]);
+      return !error;
+    } catch (err) {
+      console.warn('Supabase insertParticipant error:', err);
+      return false;
+    }
+  },
+
+  async updateParticipantCompletion(id: string, completedAt: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('participants')
+        .update({
+          status: 'completed',
+          completed_at: completedAt,
+          current_section: 'Selesai Seluruh Ujian',
+        })
+        .eq('id', id);
+      return !error;
+    } catch (err) {
+      console.warn('Supabase updateParticipant error:', err);
+      return false;
+    }
+  },
+
+  async updateParticipantSection(id: string, currentSection: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('participants')
+        .update({ current_section: currentSection })
+        .eq('id', id);
+      return !error;
+    } catch (err) {
+      console.warn('Supabase updateParticipantSection error:', err);
+      return false;
+    }
+  },
+
+  async clearParticipants(): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('participants').delete().neq('id', '0');
+      return !error;
+    } catch {
+      return false;
+    }
+  },
+
+  // TOKENS SYNC
+  async fetchTokens(): Promise<ExamToken[] | null> {
+    try {
+      const { data, error } = await supabase
+        .from('tokens')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error || !data) return null;
+
+      return data.map((row) => ({
+        id: row.id,
+        code: row.code,
+        name: row.name,
+        examType: row.exam_type,
+        isActive: row.is_active,
+        createdAt: row.created_at,
+        usedCount: row.used_count || 0,
+        maxCapacity: row.max_capacity,
+        examDate: row.exam_date,
+        note: row.note,
+      }));
+    } catch (err) {
+      console.warn('Supabase fetchTokens fallback to local:', err);
+      return null;
+    }
+  },
+
+  async upsertToken(token: ExamToken): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('tokens').upsert([
+        {
+          id: token.id,
+          code: token.code,
+          name: token.name,
+          exam_type: token.examType,
+          is_active: token.isActive,
+          created_at: token.createdAt,
+          used_count: token.usedCount,
+          max_capacity: token.maxCapacity,
+          exam_date: token.examDate,
+          note: token.note,
+        },
+      ]);
+      return !error;
+    } catch (err) {
+      console.warn('Supabase upsertToken error:', err);
+      return false;
+    }
+  },
+
+  async deleteToken(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('tokens').delete().eq('id', id);
+      return !error;
+    } catch {
+      return false;
+    }
+  },
+
+  // SETTINGS SYNC
+  async fetchSettings(): Promise<EmbedSettings | null> {
+    try {
+      const { data, error } = await supabase.from('settings').select('*').limit(1).maybeSingle();
+      if (error || !data) return null;
+
+      return {
+        institutionName: data.institution_name || 'STIE Nasional Banjarmasin',
+        activeExamSchedule: data.active_exam_schedule || 'both',
+        listeningAudioUrl: data.listening_audio_url || '',
+        instructionToefl: data.instruction_toefl || '',
+        instructionTpa: data.instruction_tpa || '',
+        toeflSections: {
+          listening: {
+            key: 'listening',
+            name: 'Section 1: Listening Comprehension Questions',
+            shortName: 'Listening',
+            url: data.listening_url,
+            minutes: data.listening_minutes || 35,
+            questionCount: 50,
+          },
+          structure: {
+            key: 'structure',
+            name: 'Section 2: Structure and Written Expression',
+            shortName: 'Structure',
+            url: data.structure_url,
+            minutes: data.structure_minutes || 25,
+            questionCount: 40,
+          },
+          reading: {
+            key: 'reading',
+            name: 'Section 3: Reading Comprehension Questions',
+            shortName: 'Reading',
+            url: data.reading_url,
+            minutes: data.reading_minutes || 55,
+            questionCount: 50,
+          },
+        },
+        tpa: {
+          name: 'Tes Potensi Akademik (TPA) Terpadu',
+          url: data.tpa_url,
+          minutes: data.tpa_minutes || 60,
+          questionCount: 60,
+        },
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  async saveSettings(settings: EmbedSettings): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('settings').upsert([
+        {
+          id: 'primary',
+          institution_name: settings.institutionName,
+          active_exam_schedule: settings.activeExamSchedule,
+          listening_audio_url: settings.listeningAudioUrl,
+          instruction_toefl: settings.instructionToefl,
+          instruction_tpa: settings.instructionTpa,
+          listening_url: settings.toeflSections.listening.url,
+          listening_minutes: settings.toeflSections.listening.minutes,
+          structure_url: settings.toeflSections.structure.url,
+          structure_minutes: settings.toeflSections.structure.minutes,
+          reading_url: settings.toeflSections.reading.url,
+          reading_minutes: settings.toeflSections.reading.minutes,
+          tpa_url: settings.tpa.url,
+          tpa_minutes: settings.tpa.minutes,
+        },
+      ]);
+      return !error;
+    } catch {
+      return false;
+    }
+  },
+};
