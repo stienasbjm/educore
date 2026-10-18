@@ -31,7 +31,12 @@ import {
   ExternalLink,
   Cloud,
   Menu,
-  X
+  X,
+  Sparkles,
+  LockKeyhole,
+  ArrowUpRight,
+  LoaderCircle,
+  ClipboardCheck
 } from 'lucide-react';
 import { StorageService, formatEmbedUrl } from './storage';
 import { AdminAuthError, SupabaseService } from './supabase';
@@ -49,6 +54,7 @@ export function App() {
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>(StorageService.getTheme());
   const [savedExamSession] = useState<ExamRecoverySession | null>(() => StorageService.getExamSession());
+  const [authCheckComplete, setAuthCheckComplete] = useState<boolean>(false);
 
   // Navigation Screens include recovery confirmation before a saved exam resumes.
   const [currentScreen, setCurrentScreen] = useState<string>(savedExamSession ? 'student_resume' : 'login');
@@ -130,6 +136,21 @@ export function App() {
     document.documentElement.setAttribute('data-theme', theme);
     StorageService.setTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    let isMounted = true;
+    void SupabaseService.restoreAdminSession().then((hasAdminSession) => {
+      if (!isMounted) return;
+      if (hasAdminSession && !savedExamSession) {
+        setCurrentScreen('admin_dashboard');
+      }
+      setAuthCheckComplete(true);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [savedExamSession]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -564,186 +585,174 @@ export function App() {
           SCREEN 1: LOGIN PORTAL (SIMPLE & CLEAN)
           ========================================================================= */}
       {currentScreen === 'login' && (
-        <main className="login-wrapper">
-          {/* Top Floating Theme Switcher */}
-          <div style={{ position: 'fixed', top: '1.25rem', right: '1.5rem', zIndex: 100, display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button type="button" onClick={toggleTheme} className="theme-toggle-btn" title="Ganti Tema">
-              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-              <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-            </button>
-          </div>
-
-          <div className="login-card">
-            {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 'var(--radius-md)',
-                  background: 'var(--primary)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#ffffff',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                <GraduationCap size={24} />
-              </div>
-              <h1 style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>EduCore</h1>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem' }}>
-                TPA & TOEFL Like<br />STIE Nasional Banjarmasin
-              </p>
+        !authCheckComplete ? (
+          <main className="auth-restoring-screen" aria-live="polite">
+            <div className="auth-restoring-card">
+              <div className="login-brand-mark"><GraduationCap size={24} /></div>
+              <span>EduCore</span>
+              <LoaderCircle className="auth-restoring-spinner" size={22} />
+              <p>Memeriksa sesi dengan aman...</p>
             </div>
-
-            {/* Tab Switcher */}
-            <div className="login-tab-switcher">
-              <button
-                type="button"
-                className={`tab-btn ${loginMode === 'student' ? 'active' : ''}`}
-                onClick={() => {
-                  setLoginMode('student');
-                  setTokenError('');
-                }}
-              >
-                <KeyRound size={15} /> Mahasiswa
+          </main>
+        ) : (
+          <main className="login-wrapper">
+            <header className="login-topbar">
+              <a className="login-brand" href={import.meta.env.BASE_URL} aria-label="EduCore beranda">
+                <span className="login-brand-mark"><GraduationCap size={23} /></span>
+                <span>
+                  <strong>EduCore</strong>
+                  <small>STIE Nasional Banjarmasin</small>
+                </span>
+              </a>
+              <button type="button" onClick={toggleTheme} className="theme-toggle-btn" title="Ganti Tema">
+                {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
               </button>
-              <button
-                type="button"
-                className={`tab-btn ${loginMode === 'admin' ? 'active' : ''}`}
-                onClick={() => {
-                  setLoginMode('admin');
-                  setAdminError('');
-                }}
-              >
-                <Shield size={15} /> Administrator
-              </button>
-            </div>
+            </header>
 
-            {/* TAB MAHASISWA */}
-            {loginMode === 'student' && (
-              <form onSubmit={handleStudentTokenLogin}>
-                <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    Masukkan token ujian resmi yang diberikan pengawas lab
+            <div className="login-showcase">
+              <section className="login-hero">
+                <div className="login-hero-orbit login-hero-orbit-one" />
+                <div className="login-hero-orbit login-hero-orbit-two" />
+                <div className="login-hero-content">
+                  <div className="login-eyebrow"><Sparkles size={14} /> PORTAL AKADEMIK DIGITAL</div>
+                  <h1>Fokus pada potensi.<br /><span>Raih pencapaian.</span></h1>
+                  <p>
+                    Satu ruang digital untuk mengerjakan ujian dengan lebih terarah, nyaman, dan terukur.
+                  </p>
+                  <div className="login-exam-highlights">
+                    <div className="login-exam-highlight">
+                      <span className="login-highlight-icon"><Headphones size={19} /></span>
+                      <span><strong>TOEFL Like</strong><small>Listening · Structure · Reading</small></span>
+                      <ArrowUpRight size={17} />
+                    </div>
+                    <div className="login-exam-highlight">
+                      <span className="login-highlight-icon login-highlight-icon-tpa"><Brain size={19} /></span>
+                      <span><strong>Tes Potensi Akademik</strong><small>Uji logika dan kemampuan analitis</small></span>
+                      <ArrowUpRight size={17} />
+                    </div>
+                  </div>
+                </div>
+                <div className="login-hero-footer">
+                  <span><Shield size={14} /> Akses terlindungi</span>
+                  <span>Platform ujian STIENAS</span>
+                </div>
+              </section>
+
+              <section className="login-panel">
+                <div className="login-panel-heading">
+                  <span className="login-panel-kicker">SELAMAT DATANG</span>
+                  <h2>{loginMode === 'student' ? 'Mulai dengan percaya diri' : 'Ruang kerja pengelola'}</h2>
+                  <p>
+                    {loginMode === 'student'
+                      ? 'Masukkan kode sesi yang diberikan oleh pengawas.'
+                      : 'Masuk untuk mengelola sesi dan layanan ujian.'}
                   </p>
                 </div>
 
-                <div className="token-input-hero" style={{ marginBottom: '1rem' }}>
-                  <input
-                    type="text"
-                    value={inputToken}
-                    onChange={(e) => setInputToken(e.target.value.toUpperCase())}
-                    placeholder="KODE TOKEN"
-                    autoFocus
-                    required
-                  />
-                </div>
-
-                {tokenError && (
-                  <div
-                    style={{
-                      background: 'rgba(220, 38, 38, 0.08)',
-                      border: '1px solid rgba(220, 38, 38, 0.25)',
-                      color: '#ef4444',
-                      padding: '0.65rem',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '0.825rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      marginBottom: '1rem',
+                <div className="login-mode-switcher" aria-label="Pilih akses">
+                  <button
+                    type="button"
+                    className={`login-mode-option ${loginMode === 'student' ? 'active' : ''}`}
+                    onClick={() => {
+                      setLoginMode('student');
+                      setTokenError('');
                     }}
                   >
-                    <AlertCircle size={16} />
-                    <span>{tokenError}</span>
-                  </div>
-                )}
-
-                <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-                  Masuk ke Ujian <ChevronRight size={16} />
-                </button>
-
-                {/* Token Quick Helpers */}
-                <div className="token-hint-box">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>Token Sesi:</span>
-                    <span style={{ fontSize: '0.725rem' }}>Klik untuk isi</span>
-                  </div>
-                  <div className="sample-token-pills">
-                    {tokens
-                      .filter((t) => t.isActive)
-                      .slice(0, 4)
-                      .map((tok) => (
-                        <button
-                          key={tok.id}
-                          type="button"
-                          className="token-pill"
-                          onClick={() => setInputToken(tok.code)}
-                        >
-                          {tok.code} ({tok.examType.toUpperCase()})
-                        </button>
-                      ))}
-                  </div>
-                </div>
-              </form>
-            )}
-
-            {/* TAB ADMIN */}
-            {loginMode === 'admin' && (
-              <form onSubmit={handleAdminLogin}>
-                <div className="form-group">
-                  <label className="form-label">Username</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={adminUsername}
-                    onChange={(e) => setAdminUsername(e.target.value)}
-                    placeholder="admin"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Kata Sandi</label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-
-                {adminError && (
-                  <div
-                    style={{
-                      background: 'rgba(220, 38, 38, 0.08)',
-                      border: '1px solid rgba(220, 38, 38, 0.25)',
-                      color: '#ef4444',
-                      padding: '0.65rem',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '0.825rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      marginBottom: '1rem',
+                    <ClipboardCheck size={17} /> Ikuti Ujian
+                  </button>
+                  <button
+                    type="button"
+                    className={`login-mode-option ${loginMode === 'admin' ? 'active' : ''}`}
+                    onClick={() => {
+                      setLoginMode('admin');
+                      setAdminError('');
                     }}
                   >
-                    <AlertCircle size={16} />
-                    <span>{adminError}</span>
-                  </div>
+                    <LockKeyhole size={17} /> Akses Pengelola
+                  </button>
+                </div>
+
+                {loginMode === 'student' && (
+                  <form className="login-form" onSubmit={handleStudentTokenLogin}>
+                    <label className="form-label" htmlFor="exam-token">Kode sesi ujian</label>
+                    <div className="login-input-wrap token-input-hero">
+                      <KeyRound size={18} />
+                      <input
+                        id="exam-token"
+                        type="text"
+                        value={inputToken}
+                        onChange={(e) => setInputToken(e.target.value.toUpperCase())}
+                        placeholder="Contoh: EDU-AB12"
+                        autoComplete="off"
+                        autoFocus
+                        required
+                      />
+                    </div>
+
+                    {tokenError && (
+                      <div className="login-error" role="alert">
+                        <AlertCircle size={16} /><span>{tokenError}</span>
+                      </div>
+                    )}
+
+                    <button type="submit" className="btn btn-primary btn-lg login-submit">
+                      Lanjutkan <ArrowRight size={17} />
+                    </button>
+                    <p className="login-helper"><Shield size={14} /> Pastikan kode sesuai informasi pengawas.</p>
+                  </form>
                 )}
 
-                <button type="submit" className="btn btn-emerald btn-lg" style={{ width: '100%' }}>
-                  Masuk Panel Pengawas <Shield size={16} />
-                </button>
-              </form>
-            )}
-          </div>
-        </main>
+                {loginMode === 'admin' && (
+                  <form className="login-form" onSubmit={handleAdminLogin}>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="admin-username">ID Pengelola</label>
+                      <input
+                        id="admin-username"
+                        type="text"
+                        className="form-input"
+                        value={adminUsername}
+                        onChange={(e) => setAdminUsername(e.target.value)}
+                        placeholder="Masukkan ID pengelola"
+                        autoComplete="username"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="admin-password">Kata sandi</label>
+                      <input
+                        id="admin-password"
+                        type="password"
+                        className="form-input"
+                        value={adminPassword}
+                        onChange={(e) => setAdminPassword(e.target.value)}
+                        placeholder="Masukkan kata sandi"
+                        autoComplete="current-password"
+                        required
+                      />
+                    </div>
+
+                    {adminError && (
+                      <div className="login-error" role="alert">
+                        <AlertCircle size={16} /><span>{adminError}</span>
+                      </div>
+                    )}
+
+                    <button type="submit" className="btn btn-primary btn-lg login-submit">
+                      Masuk dengan aman <ArrowRight size={17} />
+                    </button>
+                    <p className="login-helper"><LockKeyhole size={14} /> Sesi aman dikelola oleh Supabase Auth.</p>
+                  </form>
+                )}
+
+                <div className="login-panel-footer">
+                  <span>TPA & TOEFL Like</span><span>•</span><span>STIE Nasional Banjarmasin</span>
+                </div>
+              </section>
+            </div>
+          </main>
+        )
       )}
 
       {currentScreen === 'student_resume' && savedExamSession && (

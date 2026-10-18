@@ -21,6 +21,30 @@ export class AdminAuthError extends Error {
 }
 
 export const SupabaseService = {
+  async restoreAdminSession(): Promise<boolean> {
+    if (!ADMIN_EMAIL) return false;
+
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.warn('Supabase admin session restore failed:', sessionError);
+        return false;
+      }
+
+      if (!sessionData.session) return false;
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.warn('Supabase could not validate the saved admin session:', userError);
+        return false;
+      }
+      return userData.user.email?.trim().toLowerCase() === ADMIN_EMAIL;
+    } catch (error) {
+      console.warn('Supabase admin session restore failed:', error);
+      return false;
+    }
+  },
+
   async signInAdmin(username: string, password: string): Promise<void> {
     if (!ADMIN_USERNAME || !ADMIN_EMAIL) {
       throw new AdminAuthError('not-configured');
