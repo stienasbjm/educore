@@ -1,11 +1,11 @@
 # Product Requirement Document (PRD) & Project Brief
-## Portal Ujian CAT TOEFL & Prediction Test — STIE Nasional Banjarmasin
+## EduCore: TPA & TOEFL Like STIE Nasional Banjarmasin
 
 ---
 
 ### 1. Executive Summary & Ringkasan Proyek
 
-* **Nama Produk / Platform:** Sistem CAT Ujian TOEFL STIE Nasional Banjarmasin (Portal Ujian TOEFL CBT STIENAS)
+* **Nama Produk / Platform:** EduCore — TPA & TOEFL Like STIE Nasional Banjarmasin
 * **Pemilik Produk:** Unit Pelaksana Teknis (UPT) Bahasa & Sertifikasi Internasional bekerjasama dengan Bagian Akademik & IT STIE Nasional Banjarmasin.
 * **Target Pengguna Utama:**
   1. **Mahasiswa Tingkat Akhir / Reguler STIENAS:** Peserta tes TOEFL prediction sebagai syarat kelulusan yudisium, sidang skripsi, atau sertifikasi kompetensi.

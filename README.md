@@ -1,6 +1,6 @@
-# Portal CAT TOEFL STIENAS
+# EduCore: TPA & TOEFL Like STIE Nasional Banjarmasin
 
-Portal CAT berbasis React, TypeScript, Vite, dan Supabase. Antarmuka mengikuti tiga referensi Stitch di `stitch_stie_nas_toefl_portal/`; mode produksi menampilkan tiga Google Form buatan admin, satu untuk tiap section, dengan prefill identitas dan timer per section.
+EduCore adalah portal ujian CAT berbasis React, TypeScript, Vite, dan Supabase untuk TPA serta TOEFL Like di STIE Nasional Banjarmasin. Antarmuka mengikuti tiga referensi Stitch di `stitch_stie_nas_toefl_portal/`; mode produksi menampilkan tiga Google Form buatan admin, satu untuk tiap section, dengan prefill identitas dan timer per section.
 
 ## Jalankan mode demo
 
@@ -25,7 +25,7 @@ Jika login ditolak, pastikan user `arief@stienas-ypb.ac.id` berada di proyek Sup
 
 ## Deploy ke GitHub Pages
 
-Repository ini memakai sumber GitHub Pages dari branch `main`, folder `/docs`. Pastikan nilai `VITE_ADMIN_USERNAME` dan `VITE_ADMIN_EMAIL` sudah diatur sebelum `npm run build`, lalu commit dan push perubahan di folder `docs/` bersama perubahan sumber. Output build menggunakan base path `/testakademik/` dan menyertakan `.nojekyll`. File `.env.local` tidak ikut di-push; kata sandi hanya diverifikasi oleh Supabase Auth dan tidak masuk ke bundel. Terapkan RLS Supabase untuk membatasi akses data.
+Repository ini memakai sumber GitHub Pages dari branch `main`, folder `/docs`. Pastikan nilai `VITE_ADMIN_USERNAME` dan `VITE_ADMIN_EMAIL` sudah diatur sebelum `npm run build`, lalu commit dan push perubahan di folder `docs/` bersama perubahan sumber. Output build menggunakan base path `/educore/` dan menyertakan `.nojekyll`. File `.env.local` tidak ikut di-push; kata sandi hanya diverifikasi oleh Supabase Auth dan tidak masuk ke bundel. Terapkan RLS Supabase untuk membatasi akses data.
 
 ## Siapkan data produksi
 

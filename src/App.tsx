@@ -29,7 +29,9 @@ import {
   Sun,
   Moon,
   ExternalLink,
-  Cloud
+  Cloud,
+  Menu,
+  X
 } from 'lucide-react';
 import { StorageService, formatEmbedUrl } from './storage';
 import { AdminAuthError, SupabaseService } from './supabase';
@@ -74,6 +76,8 @@ export function App() {
   const [adminSidebarMenu, setAdminSidebarMenu] = useState<
     'overview' | 'tokens' | 'toefl_embeds' | 'tpa_embeds' | 'participants'
   >('overview');
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState<boolean>(false);
+  const [isExamMenuOpen, setIsExamMenuOpen] = useState<boolean>(false);
 
   // Shared Data
   const [tokens, setTokens] = useState<ExamToken[]>(StorageService.getTokens());
@@ -255,6 +259,7 @@ export function App() {
     if (!completedSections.includes(currentToeflSection)) {
       setCompletedSections([...completedSections, currentToeflSection]);
     }
+    setIsExamMenuOpen(false);
     setCurrentToeflSection(nextSec);
     const secConfig = embedSettings.toeflSections[nextSec];
     setRemainingSeconds(secConfig.minutes * 60);
@@ -500,9 +505,9 @@ export function App() {
               >
                 <GraduationCap size={24} />
               </div>
-              <h1 style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>Portal Ujian CAT</h1>
+              <h1 style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>EduCore</h1>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem' }}>
-                STIE Nasional Banjarmasin • Akuntansi & Manajemen
+                TPA & TOEFL Like<br />STIE Nasional Banjarmasin
               </p>
             </div>
 
@@ -771,8 +776,8 @@ export function App() {
         <div className="exam-layout-with-sidebar">
           {/* SIDEBAR UJIAN */}
           <aside
-            className="exam-sidebar"
-            style={{ display: isFullscreen ? 'none' : 'flex' }}
+            id="exam-navigation"
+            className={`exam-sidebar ${isFullscreen ? 'fullscreen-hidden' : ''} ${isExamMenuOpen ? 'mobile-open' : ''}`}
           >
             {/* Header Profil */}
             <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.85rem', marginBottom: '0.85rem' }}>
@@ -888,7 +893,10 @@ export function App() {
                     <button
                       type="button"
                       className="btn btn-emerald btn-sm"
-                      onClick={() => setIsFinishConfirmModalOpen(true)}
+                      onClick={() => {
+                        setIsExamMenuOpen(false);
+                        setIsFinishConfirmModalOpen(true);
+                      }}
                     >
                       <CheckCircle2 size={15} /> Selesaikan Seluruh TOEFL
                     </button>
@@ -907,7 +915,10 @@ export function App() {
                   type="button"
                   className="btn btn-emerald btn-sm"
                   style={{ width: '100%' }}
-                  onClick={() => setIsFinishConfirmModalOpen(true)}
+                  onClick={() => {
+                    setIsExamMenuOpen(false);
+                    setIsFinishConfirmModalOpen(true);
+                  }}
                 >
                   <CheckCircle2 size={15} /> Selesaikan Ujian TPA
                 </button>
@@ -930,11 +941,32 @@ export function App() {
               </button>
             </div>
           </aside>
+          {isExamMenuOpen && !isFullscreen && (
+            <button
+              type="button"
+              className="mobile-menu-backdrop"
+              aria-label="Tutup menu ujian"
+              onClick={() => setIsExamMenuOpen(false)}
+            />
+          )}
 
           {/* MAIN PANEL */}
           <main className="exam-main-panel">
             <div className="exam-topbar">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {!isFullscreen && (
+                  <button
+                    type="button"
+                    className="mobile-menu-trigger exam-menu-trigger"
+                    aria-label={isExamMenuOpen ? 'Tutup menu ujian' : 'Buka menu ujian'}
+                    aria-expanded={isExamMenuOpen}
+                    aria-controls="exam-navigation"
+                    onClick={() => setIsExamMenuOpen((open) => !open)}
+                  >
+                    {isExamMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                  </button>
+                )}
+                <span className="exam-mobile-brand">EduCore</span>
                 <span className={`badge ${activeToken.examType === 'toefl' ? 'badge-toefl' : 'badge-tpa'}`}>
                   {activeToken.examType === 'toefl'
                     ? embedSettings.toeflSections[currentToeflSection].shortName
@@ -959,7 +991,10 @@ export function App() {
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
-                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  onClick={() => {
+                    setIsFullscreen((fullscreen) => !fullscreen);
+                    setIsExamMenuOpen(false);
+                  }}
                 >
                   <Maximize2 size={13} /> {isFullscreen ? 'Buka Sidebar' : 'Layar Penuh'}
                 </button>
@@ -1103,27 +1138,44 @@ export function App() {
       {currentScreen === 'admin_dashboard' && (
         <div className="app-layout-sidebar">
           {/* SIDEBAR */}
-          <aside className="sidebar-container">
+          <aside
+            id="admin-navigation"
+            className={`sidebar-container ${isAdminMenuOpen ? 'mobile-open' : ''}`}
+          >
             <div className="sidebar-header">
               <div>
-                <div className="sidebar-brand-title">Panel Admin CAT</div>
-                <div className="sidebar-brand-sub">STIE Nasional Banjarmasin</div>
+                <div className="sidebar-brand-title">EduCore</div>
+                <div className="sidebar-brand-sub">TPA & TOEFL Like</div>
               </div>
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="theme-toggle-btn"
-                style={{ padding: '0.3rem', color: '#ffffff' }}
-              >
-                {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
-              </button>
+              <div className="sidebar-header-actions">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="theme-toggle-btn"
+                  style={{ padding: '0.3rem', color: '#ffffff' }}
+                  aria-label="Ganti tema"
+                >
+                  {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
+                </button>
+                <button
+                  type="button"
+                  className="mobile-menu-close"
+                  aria-label="Tutup menu admin"
+                  onClick={() => setIsAdminMenuOpen(false)}
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             <nav className="sidebar-nav">
               <button
                 type="button"
                 className={`sidebar-item ${adminSidebarMenu === 'overview' ? 'active' : ''}`}
-                onClick={() => setAdminSidebarMenu('overview')}
+                onClick={() => {
+                  setAdminSidebarMenu('overview');
+                  setIsAdminMenuOpen(false);
+                }}
               >
                 <SlidersHorizontal size={16} /> Ringkasan
               </button>
@@ -1131,7 +1183,10 @@ export function App() {
               <button
                 type="button"
                 className={`sidebar-item ${adminSidebarMenu === 'tokens' ? 'active' : ''}`}
-                onClick={() => setAdminSidebarMenu('tokens')}
+                onClick={() => {
+                  setAdminSidebarMenu('tokens');
+                  setIsAdminMenuOpen(false);
+                }}
               >
                 <KeyRound size={16} /> Token ({tokens.length})
               </button>
@@ -1139,7 +1194,10 @@ export function App() {
               <button
                 type="button"
                 className={`sidebar-item ${adminSidebarMenu === 'toefl_embeds' ? 'active' : ''}`}
-                onClick={() => setAdminSidebarMenu('toefl_embeds')}
+                onClick={() => {
+                  setAdminSidebarMenu('toefl_embeds');
+                  setIsAdminMenuOpen(false);
+                }}
               >
                 <BookOpen size={16} /> Form TOEFL (3 Seksi)
               </button>
@@ -1147,7 +1205,10 @@ export function App() {
               <button
                 type="button"
                 className={`sidebar-item ${adminSidebarMenu === 'tpa_embeds' ? 'active' : ''}`}
-                onClick={() => setAdminSidebarMenu('tpa_embeds')}
+                onClick={() => {
+                  setAdminSidebarMenu('tpa_embeds');
+                  setIsAdminMenuOpen(false);
+                }}
               >
                 <Brain size={16} /> Form TPA
               </button>
@@ -1155,7 +1216,10 @@ export function App() {
               <button
                 type="button"
                 className={`sidebar-item ${adminSidebarMenu === 'participants' ? 'active' : ''}`}
-                onClick={() => setAdminSidebarMenu('participants')}
+                onClick={() => {
+                  setAdminSidebarMenu('participants');
+                  setIsAdminMenuOpen(false);
+                }}
               >
                 <FileSpreadsheet size={16} /> Rekap Peserta ({participants.length})
               </button>
@@ -1186,9 +1250,33 @@ export function App() {
               </button>
             </div>
           </aside>
+          {isAdminMenuOpen && (
+            <button
+              type="button"
+              className="mobile-menu-backdrop"
+              aria-label="Tutup menu admin"
+              onClick={() => setIsAdminMenuOpen(false)}
+            />
+          )}
 
           {/* MAIN CONTENT */}
           <main className="sidebar-content-area">
+            <div className="admin-mobile-topbar">
+              <button
+                type="button"
+                className="mobile-menu-trigger"
+                aria-label={isAdminMenuOpen ? 'Tutup menu admin' : 'Buka menu admin'}
+                aria-expanded={isAdminMenuOpen}
+                aria-controls="admin-navigation"
+                onClick={() => setIsAdminMenuOpen((open) => !open)}
+              >
+                {isAdminMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+              <div>
+                <strong>EduCore</strong>
+                <span>Panel Administrator</span>
+              </div>
+            </div>
             {/* OVERVIEW */}
             {adminSidebarMenu === 'overview' && (
               <div>

@@ -1,5 +1,5 @@
 -- ========================================================
--- SCHEMA SQL SUPABASE: PROJECT testakademik (qqjeajnrepmawqjqsuup)
+-- SCHEMA SQL SUPABASE: EDUCORE (project ref qqjeajnrepmawqjqsuup)
 -- Jalankan skrip ini di SQL Editor pada Dashboard Supabase Anda
 -- ========================================================
 
