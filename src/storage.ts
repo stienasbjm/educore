@@ -343,11 +343,10 @@ export const StorageService = {
       ADMIN_PASSWORD === password;
   },
 
-  exportParticipantsToCSV(): void {
+  exportParticipantsToCSV(): boolean {
     const participants = this.getParticipants();
     if (participants.length === 0) {
-      alert('Belum ada data peserta untuk diunduh.');
-      return;
+      return false;
     }
 
     const headers = [
@@ -388,5 +387,6 @@ export const StorageService = {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    return true;
   },
 };

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 import {
   Shield,
   KeyRound,
@@ -200,7 +202,11 @@ export function App() {
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentName.trim() || !studentNim.trim()) {
-      alert('Nama Lengkap dan NIM wajib diisi.');
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Data belum lengkap',
+        text: 'Nama Lengkap dan NIM wajib diisi.',
+      });
       return;
     }
 
@@ -336,7 +342,10 @@ export function App() {
   const handleSaveToken = (e: React.FormEvent) => {
     e.preventDefault();
     if (!tokenFormData.code.trim()) {
-      alert('Kode token wajib diisi.');
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Kode token wajib diisi',
+      });
       return;
     }
 
@@ -359,8 +368,17 @@ export function App() {
     setIsTokenModalOpen(false);
   };
 
-  const handleDeleteToken = (tokenId: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus token ini?')) {
+  const handleDeleteToken = async (tokenId: string) => {
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Hapus token ini?',
+      text: 'Token yang dihapus tidak dapat dipulihkan.',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, hapus',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#dc2626',
+    });
+    if (result.isConfirmed) {
       const updated = StorageService.deleteToken(tokenId);
       setTokens(updated);
       SupabaseService.deleteToken(tokenId);
@@ -373,11 +391,27 @@ export function App() {
     setTimeout(() => setCopyFeedback(''), 2000);
   };
 
-  const handleSaveEmbedSettings = (e: React.FormEvent) => {
+  const handleSaveEmbedSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     StorageService.saveSettings(embedSettings);
-    SupabaseService.saveSettings(embedSettings);
-    alert('Pengaturan link sematan Google Form & waktu ujian berhasil disimpan ke sistem dan cloud!');
+    const savedToCloud = await SupabaseService.saveSettings(embedSettings);
+    await Swal.fire({
+      icon: savedToCloud ? 'success' : 'warning',
+      title: savedToCloud ? 'Pengaturan tersimpan' : 'Tersimpan di perangkat ini',
+      text: savedToCloud
+        ? 'Pengaturan link sematan Google Form dan waktu ujian berhasil disimpan.'
+        : 'Pengaturan tersimpan lokal, tetapi gagal disinkronkan ke Supabase.',
+    });
+  };
+
+  const handleExportParticipants = () => {
+    if (!StorageService.exportParticipantsToCSV()) {
+      void Swal.fire({
+        icon: 'info',
+        title: 'Belum ada data peserta',
+        text: 'Belum ada data peserta untuk diunduh.',
+      });
+    }
   };
 
   const handleOpenPreview = (url: string, title: string) => {
@@ -785,9 +819,18 @@ export function App() {
                       type="button"
                       className="btn btn-primary btn-sm"
                       onClick={() => {
-                        if (confirm('Pastikan Anda sudah menekan tombol KIRIM pada Form Listening sebelum lanjut ke Section 2: Structure. Lanjutkan?')) {
-                          handleNextToeflSection('structure');
-                        }
+                        void Swal.fire({
+                          icon: 'question',
+                          title: 'Lanjut ke Structure?',
+                          text: 'Pastikan Anda sudah menekan tombol KIRIM pada Form Listening sebelum lanjut ke Section 2: Structure.',
+                          showCancelButton: true,
+                          confirmButtonText: 'Lanjut',
+                          cancelButtonText: 'Batal',
+                        }).then(({ isConfirmed }) => {
+                          if (isConfirmed) {
+                            handleNextToeflSection('structure');
+                          }
+                        });
                       }}
                     >
                       Lanjut ke Section 2 (Structure) <ChevronRight size={14} />
@@ -799,9 +842,18 @@ export function App() {
                       type="button"
                       className="btn btn-primary btn-sm"
                       onClick={() => {
-                        if (confirm('Pastikan Anda sudah menekan tombol KIRIM pada Form Structure sebelum lanjut ke Section 3: Reading. Lanjutkan?')) {
-                          handleNextToeflSection('reading');
-                        }
+                        void Swal.fire({
+                          icon: 'question',
+                          title: 'Lanjut ke Reading?',
+                          text: 'Pastikan Anda sudah menekan tombol KIRIM pada Form Structure sebelum lanjut ke Section 3: Reading.',
+                          showCancelButton: true,
+                          confirmButtonText: 'Lanjut',
+                          cancelButtonText: 'Batal',
+                        }).then(({ isConfirmed }) => {
+                          if (isConfirmed) {
+                            handleNextToeflSection('reading');
+                          }
+                        });
                       }}
                     >
                       Lanjut ke Section 3 (Reading) <ChevronRight size={14} />
@@ -1094,7 +1146,7 @@ export function App() {
               <button
                 type="button"
                 className="btn btn-emerald btn-sm"
-                onClick={() => StorageService.exportParticipantsToCSV()}
+                onClick={handleExportParticipants}
                 style={{ width: '100%' }}
               >
                 <Download size={14} /> Download Excel/CSV
@@ -1493,7 +1545,7 @@ export function App() {
                     <button onClick={() => window.print()} className="btn btn-secondary btn-sm">
                       <Printer size={14} /> Cetak
                     </button>
-                    <button onClick={() => StorageService.exportParticipantsToCSV()} className="btn btn-emerald btn-sm">
+                    <button onClick={handleExportParticipants} className="btn btn-emerald btn-sm">
                       <Download size={14} /> Download Excel/CSV
                     </button>
                   </div>
@@ -1528,11 +1580,21 @@ export function App() {
                   {participants.length > 0 && (
                     <button
                       onClick={() => {
-                        if (confirm('Kosongkan seluruh data peserta?')) {
-                          StorageService.clearParticipants();
-                          SupabaseService.clearParticipants();
-                          setParticipants([]);
-                        }
+                        void Swal.fire({
+                          icon: 'warning',
+                          title: 'Kosongkan data peserta?',
+                          text: 'Seluruh data peserta akan dihapus dan tindakan ini tidak dapat dibatalkan.',
+                          showCancelButton: true,
+                          confirmButtonText: 'Ya, kosongkan',
+                          cancelButtonText: 'Batal',
+                          confirmButtonColor: '#dc2626',
+                        }).then(({ isConfirmed }) => {
+                          if (isConfirmed) {
+                            StorageService.clearParticipants();
+                            SupabaseService.clearParticipants();
+                            setParticipants([]);
+                          }
+                        });
                       }}
                       className="btn btn-ghost btn-sm"
                       style={{ color: '#ef4444' }}

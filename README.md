@@ -20,6 +20,10 @@ Buka URL Vite yang ditampilkan di terminal. Token demo awal adalah `STN-2025-LST
 
 Login admin saat ini diperiksa di browser; variabel `VITE_*` akan tertanam pada bundel aplikasi dan bukan tempat penyimpanan rahasia. Jangan mengandalkan login ini sebagai batas keamanan untuk data produksi. Lindungi operasi data dengan autentikasi serta Row Level Security Supabase yang sesuai sebelum membuka portal ke publik.
 
+## Deploy ke GitHub Pages
+
+Repository ini memakai sumber GitHub Pages dari branch `main`, folder `/docs`. Jalankan `npm run build`, lalu commit dan push perubahan di folder `docs/` bersama perubahan sumber. Output build sudah menggunakan base path `/testakademik/` dan menyertakan `.nojekyll` untuk deployment project Pages. File `.env.local` tidak ikut di-push, dan kredensial admin sengaja dikosongkan pada build produksi agar tidak bocor ke bundel publik. Login admin di client-side tidak dapat menjadi kontrol akses yang aman; gunakan Supabase Auth dan kebijakan RLS sebelum mengaktifkan akses admin produksi.
+
 ## Siapkan data produksi
 
 Sebelum ujian peserta dapat dimulai, pengawas mengatur URL Listening, Structure, dan Reading pada panel **Kontrol portal & Google Form**, beserta entry ID masing-masing Form, lalu menyimpan dan membuka gerbang. Ambil ID dari tautan **Get pre-filled link** pada setiap Form; masukkan angka setelah `entry.`. Roster aktif diimpor melalui panel data. Format roster minimal:
