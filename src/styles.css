@@ -1082,6 +1082,247 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(125, 125, 125, 0.03);
 }
 
+.admin-overview-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.4rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 82% 10%, rgba(96, 165, 250, 0.45), transparent 32%),
+    linear-gradient(118deg, #102c58, #1e4d93 65%, #2563eb);
+  box-shadow: 0 16px 36px rgba(30, 64, 125, 0.16);
+}
+
+.admin-overview-hero h2 {
+  margin: 0.35rem 0;
+  color: #ffffff;
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  letter-spacing: -0.035em;
+}
+
+.admin-overview-hero p {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.86rem;
+}
+
+.admin-overview-hero .btn {
+  flex: 0 0 auto;
+  border-color: rgba(255, 255, 255, 0.75);
+  background: #ffffff;
+  color: #173b70;
+}
+
+.admin-overview-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #bfdbfe;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.admin-stat-card {
+  min-height: 112px;
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.035);
+}
+
+.admin-stat-icon,
+.exam-report-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 13px;
+}
+
+.token-stat-icon { color: #2563eb; background: rgba(37, 99, 235, 0.11); }
+.participants-stat-icon { color: #0891b2; background: rgba(8, 145, 178, 0.11); }
+.accounting-stat-icon { color: #7c3aed; background: rgba(124, 58, 237, 0.11); }
+.management-stat-icon { color: #059669; background: rgba(5, 150, 105, 0.11); }
+
+.admin-report-shortcuts,
+.exam-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0 0 1.25rem;
+}
+
+.admin-report-shortcut {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--card-bg);
+}
+
+.admin-report-shortcut > div {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  column-gap: 0.55rem;
+}
+
+.admin-report-shortcut span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.admin-report-shortcut strong {
+  color: var(--text-main);
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+.admin-report-shortcut small {
+  grid-column: 1 / -1;
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.admin-report-shortcut.toefl { border-left: 3px solid #2563eb; }
+.admin-report-shortcut.tpa { border-left: 3px solid #8b5cf6; }
+
+.admin-links-card {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+}
+
+.admin-links-card h3 {
+  margin-bottom: 0.85rem;
+  font-size: 0.98rem;
+}
+
+.admin-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.admin-link-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+}
+
+.admin-link-row span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exam-report-grid {
+  margin: 0 0 1rem;
+}
+
+.exam-report-card {
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 15px;
+  background: var(--card-bg);
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.035);
+}
+
+.exam-report-card.toefl { border-top: 3px solid #2563eb; }
+.exam-report-card.tpa { border-top: 3px solid #8b5cf6; }
+
+.exam-report-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.exam-report-card.toefl .exam-report-icon {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.exam-report-card.tpa .exam-report-icon {
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.exam-report-heading h3 {
+  font-size: 0.95rem;
+}
+
+.exam-report-heading p {
+  margin-top: 0.15rem;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.exam-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.student-profile-card,
+.student-completion-card {
+  border-radius: 20px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+.student-profile-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.student-profile-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, #2563eb, #06b6d4, #10b981);
+  content: '';
+}
+
+.student-completion-card {
+  border-top: 4px solid #16a34a;
+}
+
+.exam-sidebar > div:first-child {
+  padding: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-page);
+}
+
+.section-timer-box {
+  border-color: rgba(37, 99, 235, 0.2);
+  background: linear-gradient(145deg, rgba(37, 99, 235, 0.1), var(--bg-subtle) 70%);
+}
+
+.section-step-card {
+  border-radius: 10px;
+}
+
+.section-step-card.active-step {
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.09);
+}
+
 /* Switches */
 .switch {
   position: relative;
@@ -1303,9 +1544,37 @@ input:checked + .slider:before {
   .radio-cards-grid {
     grid-template-columns: 1fr;
   }
+  .admin-overview-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 480px) {
+  .admin-report-shortcuts,
+  .exam-report-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-report-shortcut {
+    padding: 0.9rem;
+  }
+  .admin-report-shortcut .btn {
+    flex: 0 0 auto;
+    padding-inline: 0.55rem;
+  }
+  .admin-links-card {
+    padding: 1rem;
+  }
+  .admin-link-row {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .admin-link-row span:last-child {
+    max-width: 100%;
+  }
+  .exam-report-actions .btn {
+    flex: 1 1 auto;
+  }
   .login-topbar {
     min-height: 52px;
   }

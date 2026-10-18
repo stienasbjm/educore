@@ -21,6 +21,10 @@ Pemulihan ini tidak menyimpan jawaban yang belum dikirim dalam Google Form. Form
 
 Sesi login pengelola dipertahankan oleh Supabase Auth di storage browser dan direstorasi setelah halaman dimuat ulang. EduCore memvalidasi sesi tersimpan terhadap Supabase Auth serta membandingkan identitas dengan `VITE_ADMIN_EMAIL` sebelum membuka panel. Untuk mengakhiri sesi, gunakan tombol **Keluar**; sesi juga akan berakhir bila token refresh kedaluwarsa/dicabut atau data situs dibersihkan.
 
+## Laporan peserta
+
+Pada panel **Rekap Peserta**, laporan TOEFL Like dan TPA tersedia terpisah. Tombol **Excel (.xls)** mengunduh file SpreadsheetML yang dapat dibuka di Microsoft Excel; tombol **Cetak / PDF** membuka laporan siap cetak, lalu pilih **Simpan sebagai PDF** pada dialog cetak browser. Kedua laporan memuat peserta yang sedang mengerjakan maupun yang sudah selesai, beserta identitas, token, waktu, status, dan posisi seksi. Izinkan pop-up browser untuk membuka laporan cetak.
+
 ## Konfigurasi Supabase
 
 1. Siapkan proyek Supabase dan jalankan `supabase_schema.sql` melalui SQL Editor.

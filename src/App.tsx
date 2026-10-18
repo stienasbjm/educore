@@ -39,6 +39,7 @@ import {
   ClipboardCheck
 } from 'lucide-react';
 import { StorageService, formatEmbedUrl } from './storage';
+import { downloadExamReportExcel, printExamReport } from './reports';
 import { AdminAuthError, SupabaseService } from './supabase';
 import type {
   ExamToken,
@@ -540,12 +541,24 @@ export function App() {
     });
   };
 
-  const handleExportParticipants = () => {
-    if (!StorageService.exportParticipantsToCSV()) {
+  const handleDownloadExamReport = (examType: ExamType) => {
+    if (!downloadExamReportExcel(participants, examType)) {
       void Swal.fire({
         icon: 'info',
-        title: 'Belum ada data peserta',
-        text: 'Belum ada data peserta untuk diunduh.',
+        title: 'Belum ada peserta',
+        text: `Belum ada peserta yang tercatat untuk ujian ${examType === 'toefl' ? 'TOEFL Like' : 'TPA'}.`,
+      });
+    }
+  };
+
+  const handlePrintExamReport = (examType: ExamType) => {
+    if (!printExamReport(participants, examType)) {
+      void Swal.fire({
+        icon: 'info',
+        title: 'Laporan belum dapat dicetak',
+        text: participants.some((participant) => participant.examType === examType)
+          ? 'Izinkan pop-up pada browser untuk membuka laporan, lalu pilih Simpan sebagai PDF pada dialog cetak.'
+          : `Belum ada peserta yang tercatat untuk ujian ${examType === 'toefl' ? 'TOEFL Like' : 'TPA'}.`,
       });
     }
   };
@@ -757,7 +770,7 @@ export function App() {
 
       {currentScreen === 'student_resume' && savedExamSession && (
         <main style={{ maxWidth: '580px', margin: '3.5rem auto', padding: '0 1.25rem', width: '100%' }}>
-          <div className="clean-card">
+          <div className="clean-card student-profile-card">
             <div style={{ marginBottom: '1.25rem' }}>
               <span className="badge badge-active" style={{ marginBottom: '0.5rem' }}>
                 Sesi ujian ditemukan
@@ -861,7 +874,7 @@ export function App() {
             </button>
           </div>
 
-          <div className="clean-card">
+          <div className="clean-card student-profile-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
               <div>
                 <span className="badge badge-active" style={{ marginBottom: '0.35rem' }}>
@@ -1239,7 +1252,7 @@ export function App() {
             </button>
           </div>
 
-          <div className="clean-card" style={{ textAlign: 'center', padding: '2.5rem 1.75rem' }}>
+          <div className="clean-card student-completion-card" style={{ textAlign: 'center', padding: '2.5rem 1.75rem' }}>
             <div
               style={{
                 width: 56,
@@ -1422,15 +1435,6 @@ export function App() {
 
               <button
                 type="button"
-                className="btn btn-emerald btn-sm"
-                onClick={handleExportParticipants}
-                style={{ width: '100%' }}
-              >
-                <Download size={14} /> Download Excel/CSV
-              </button>
-
-              <button
-                type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={handleAdminLogout}
                 style={{ width: '100%', color: '#ffffff', background: 'rgba(255,255,255,0.06)' }}
@@ -1468,66 +1472,97 @@ export function App() {
             </div>
             {/* OVERVIEW */}
             {adminSidebarMenu === 'overview' && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div className="admin-overview">
+                <div className="admin-overview-hero">
                   <div>
-                    <h2 style={{ fontSize: '1.35rem' }}>Ringkasan Sesi Ujian</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem' }}>
-                      Status token dan peserta ujian TOEFL Like serta TPA
+                    <span className="admin-overview-eyebrow"><Sparkles size={14} /> Dashboard EduCore</span>
+                    <h2>Ringkasan Sesi Ujian</h2>
+                    <p>
+                      Pantau peserta dan kelola sesi TOEFL Like serta TPA dari satu tempat.
                     </p>
                   </div>
-                  <button onClick={() => openTokenModal()} className="btn btn-primary btn-sm">
+                  <button onClick={() => openTokenModal()} className="btn btn-primary">
                     <Plus size={15} /> Buat Token Baru
                   </button>
                 </div>
 
                 <div className="stats-grid">
-                  <div className="stat-card">
+                  <div className="stat-card admin-stat-card">
                     <div className="stat-info">
                       <h3>Token Aktif</h3>
                       <div className="stat-value">{tokens.filter((t) => t.isActive).length} / {tokens.length}</div>
                     </div>
+                    <div className="admin-stat-icon token-stat-icon"><KeyRound size={20} /></div>
                   </div>
 
-                  <div className="stat-card">
+                  <div className="stat-card admin-stat-card">
                     <div className="stat-info">
                       <h3>Total Peserta</h3>
                       <div className="stat-value">{participants.length}</div>
                     </div>
+                    <div className="admin-stat-icon participants-stat-icon"><GraduationCap size={20} /></div>
                   </div>
 
-                  <div className="stat-card">
+                  <div className="stat-card admin-stat-card">
                     <div className="stat-info">
                       <h3>Akuntansi</h3>
                       <div className="stat-value">{participants.filter((p) => p.prodi === 'Akuntansi').length}</div>
                     </div>
+                    <div className="admin-stat-icon accounting-stat-icon"><BookOpen size={20} /></div>
                   </div>
 
-                  <div className="stat-card">
+                  <div className="stat-card admin-stat-card">
                     <div className="stat-info">
                       <h3>Manajemen</h3>
                       <div className="stat-value">{participants.filter((p) => p.prodi === 'Manajemen').length}</div>
                     </div>
+                    <div className="admin-stat-icon management-stat-icon"><Brain size={20} /></div>
                   </div>
                 </div>
 
+                <div className="admin-report-shortcuts">
+                  {(['toefl', 'tpa'] as const).map((examType) => {
+                    const label = examType === 'toefl' ? 'TOEFL Like' : 'TPA';
+                    const total = participants.filter((participant) => participant.examType === examType).length;
+                    return (
+                      <div className={`admin-report-shortcut ${examType}`} key={examType}>
+                        <div>
+                          <span>{label}</span>
+                          <strong>{total}</strong>
+                          <small>peserta tercatat</small>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => {
+                            setAdminSidebarMenu('participants');
+                            setFilterExam(examType);
+                          }}
+                        >
+                          Buka laporan <ArrowUpRight size={14} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
                 {/* Status Box */}
-                <div className="clean-card" style={{ marginTop: '1.25rem' }}>
-                  <h3 style={{ fontSize: '1rem', marginBottom: '0.85rem' }}>Status Link Soal Google Form Aktif</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.825rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                <div className="clean-card admin-links-card">
+                  <h3>Status Link Soal Google Form Aktif</h3>
+                  <div className="admin-links-list">
+                    <div className="admin-link-row">
                       <span>1. Listening ({embedSettings.toeflSections.listening.minutes}m):</span>
                       <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.listening.url.slice(0, 50)}...</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                    <div className="admin-link-row">
                       <span>2. Structure ({embedSettings.toeflSections.structure.minutes}m):</span>
                       <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.structure.url.slice(0, 50)}...</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                    <div className="admin-link-row">
                       <span>3. Reading ({embedSettings.toeflSections.reading.minutes}m):</span>
                       <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.reading.url.slice(0, 50)}...</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                    <div className="admin-link-row">
                       <span>4. TPA ({embedSettings.tpa.minutes}m):</span>
                       <span style={{ color: 'var(--text-muted)' }}>{embedSettings.tpa.url.slice(0, 50)}...</span>
                     </div>
@@ -1839,17 +1874,37 @@ export function App() {
                   <div>
                     <h2 style={{ fontSize: '1.35rem' }}>Rekap Peserta Mahasiswa</h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem' }}>
-                      Data mahasiswa yang telah menyelesaikan ujian
+                      Data peserta yang terdaftar, termasuk sesi ujian yang masih berlangsung
                     </p>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => window.print()} className="btn btn-secondary btn-sm">
-                      <Printer size={14} /> Cetak
-                    </button>
-                    <button onClick={handleExportParticipants} className="btn btn-emerald btn-sm">
-                      <Download size={14} /> Download Excel/CSV
-                    </button>
-                  </div>
+                </div>
+
+                <div className="exam-report-grid">
+                  {(['toefl', 'tpa'] as const).map((examType) => {
+                    const label = examType === 'toefl' ? 'TOEFL Like' : 'TPA';
+                    const total = participants.filter((participant) => participant.examType === examType).length;
+                    return (
+                      <section className={`exam-report-card ${examType}`} key={examType}>
+                        <div className="exam-report-heading">
+                          <div className="exam-report-icon">
+                            {examType === 'toefl' ? <BookOpen size={19} /> : <Brain size={19} />}
+                          </div>
+                          <div>
+                            <h3>{label}</h3>
+                            <p>{total} peserta · laporan terpisah</p>
+                          </div>
+                        </div>
+                        <div className="exam-report-actions">
+                          <button type="button" className="btn btn-secondary btn-sm" onClick={() => handlePrintExamReport(examType)}>
+                            <Printer size={14} /> Cetak / PDF
+                          </button>
+                          <button type="button" className="btn btn-primary btn-sm" onClick={() => handleDownloadExamReport(examType)}>
+                            <Download size={14} /> Excel (.xls)
+                          </button>
+                        </div>
+                      </section>
+                    );
+                  })}
                 </div>
 
                 {/* Filter */}
