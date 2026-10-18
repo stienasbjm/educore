@@ -62,9 +62,3 @@ export type EmbedSettings = {
   instructionTpa: string;
   activeExamSchedule: 'toefl' | 'tpa' | 'both';
 };
-
-export type AdminUser = {
-  username: string;
-  passwordHash: string;
-  displayName: string;
-};
