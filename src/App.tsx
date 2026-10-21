@@ -1367,9 +1367,14 @@ export function App() {
             className={`sidebar-container ${isAdminMenuOpen ? 'mobile-open' : ''}`}
           >
             <div className="sidebar-header">
-              <div>
-                <div className="sidebar-brand-title">EduCore</div>
-                <div className="sidebar-brand-sub">TPA & TOEFL Like</div>
+              <div className="sidebar-brand-lockup">
+                <div className="sidebar-brand-mark">
+                  <GraduationCap size={21} />
+                </div>
+                <div>
+                  <div className="sidebar-brand-title">EduCore</div>
+                  <div className="sidebar-brand-sub">TPA & TOEFL Like</div>
+                </div>
               </div>
               <div className="sidebar-header-actions">
                 <button
@@ -1393,6 +1398,7 @@ export function App() {
             </div>
 
             <nav className="sidebar-nav">
+              <div className="sidebar-nav-label">Menu Utama</div>
               <button
                 type="button"
                 className={`sidebar-item ${adminSidebarMenu === 'overview' ? 'active' : ''}`}
@@ -1401,7 +1407,7 @@ export function App() {
                   setIsAdminMenuOpen(false);
                 }}
               >
-                <SlidersHorizontal size={16} /> Ringkasan
+                <span className="sidebar-item-icon"><SlidersHorizontal size={15} /></span> Ringkasan
               </button>
 
               <button
@@ -1412,7 +1418,7 @@ export function App() {
                   setIsAdminMenuOpen(false);
                 }}
               >
-                <KeyRound size={16} /> Token ({tokens.length})
+                <span className="sidebar-item-icon"><KeyRound size={15} /></span> Token ({tokens.length})
               </button>
 
               <button
@@ -1423,7 +1429,7 @@ export function App() {
                   setIsAdminMenuOpen(false);
                 }}
               >
-                <BookOpen size={16} /> Form TOEFL (3 Seksi)
+                <span className="sidebar-item-icon"><BookOpen size={15} /></span> Form TOEFL (3 Seksi)
               </button>
 
               <button
@@ -1434,7 +1440,7 @@ export function App() {
                   setIsAdminMenuOpen(false);
                 }}
               >
-                <Brain size={16} /> Form TPA
+                <span className="sidebar-item-icon"><Brain size={15} /></span> Form TPA
               </button>
 
               <button
@@ -1445,13 +1451,14 @@ export function App() {
                   setIsAdminMenuOpen(false);
                 }}
               >
-                <FileSpreadsheet size={16} /> Rekap Peserta ({participants.length})
+                <span className="sidebar-item-icon"><FileSpreadsheet size={15} /></span> Rekap Peserta ({participants.length})
               </button>
             </nav>
 
             <div className="sidebar-footer">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.725rem', color: '#94a3b8', padding: '0.25rem 0' }}>
-                <Cloud size={13} color={supabaseConnected ? '#16a34a' : '#d97706'} />
+              <div className={`sidebar-status-pill ${supabaseConnected ? 'online' : ''}`}>
+                <Cloud size={13} color={supabaseConnected ? '#22c55e' : '#d97706'} />
+                <span className="sidebar-status-dot" />
                 <span>Supabase: {supabaseConnected ? 'Terhubung' : 'Lokal (Siap Sync)'}</span>
               </div>
 
@@ -1459,7 +1466,7 @@ export function App() {
                 type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={handleAdminLogout}
-                style={{ width: '100%', color: '#ffffff', background: 'rgba(255,255,255,0.06)' }}
+                style={{ width: '100%', color: '#ffffff', background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)' }}
               >
                 <LogOut size={14} /> Keluar
               </button>
@@ -1509,7 +1516,7 @@ export function App() {
                 </div>
 
                 <div className="stats-grid">
-                  <div className="stat-card admin-stat-card">
+                  <div className="stat-card admin-stat-card accent-token">
                     <div className="stat-info">
                       <h3>Token Aktif</h3>
                       <div className="stat-value">{tokens.filter((t) => t.isActive).length} / {tokens.length}</div>
@@ -1517,7 +1524,7 @@ export function App() {
                     <div className="admin-stat-icon token-stat-icon"><KeyRound size={20} /></div>
                   </div>
 
-                  <div className="stat-card admin-stat-card">
+                  <div className="stat-card admin-stat-card accent-participants">
                     <div className="stat-info">
                       <h3>Total Peserta</h3>
                       <div className="stat-value">{participants.length}</div>
@@ -1525,7 +1532,7 @@ export function App() {
                     <div className="admin-stat-icon participants-stat-icon"><GraduationCap size={20} /></div>
                   </div>
 
-                  <div className="stat-card admin-stat-card">
+                  <div className="stat-card admin-stat-card accent-accounting">
                     <div className="stat-info">
                       <h3>Akuntansi</h3>
                       <div className="stat-value">{participants.filter((p) => p.prodi === 'Akuntansi').length}</div>
@@ -1533,7 +1540,7 @@ export function App() {
                     <div className="admin-stat-icon accounting-stat-icon"><BookOpen size={20} /></div>
                   </div>
 
-                  <div className="stat-card admin-stat-card">
+                  <div className="stat-card admin-stat-card accent-management">
                     <div className="stat-info">
                       <h3>Manajemen</h3>
                       <div className="stat-value">{participants.filter((p) => p.prodi === 'Manajemen').length}</div>
@@ -1573,19 +1580,19 @@ export function App() {
                   <h3>Status Link Soal Google Form Aktif</h3>
                   <div className="admin-links-list">
                     <div className="admin-link-row">
-                      <span>1. Listening ({embedSettings.toeflSections.listening.minutes}m):</span>
+                      <span><span className="admin-link-index">1</span>Listening ({embedSettings.toeflSections.listening.minutes}m):</span>
                       <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.listening.url.slice(0, 50)}...</span>
                     </div>
                     <div className="admin-link-row">
-                      <span>2. Structure ({embedSettings.toeflSections.structure.minutes}m):</span>
+                      <span><span className="admin-link-index">2</span>Structure ({embedSettings.toeflSections.structure.minutes}m):</span>
                       <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.structure.url.slice(0, 50)}...</span>
                     </div>
                     <div className="admin-link-row">
-                      <span>3. Reading ({embedSettings.toeflSections.reading.minutes}m):</span>
+                      <span><span className="admin-link-index">3</span>Reading ({embedSettings.toeflSections.reading.minutes}m):</span>
                       <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.reading.url.slice(0, 50)}...</span>
                     </div>
                     <div className="admin-link-row">
-                      <span>4. TPA ({embedSettings.tpa.minutes}m):</span>
+                      <span><span className="admin-link-index">4</span>TPA ({embedSettings.tpa.minutes}m):</span>
                       <span style={{ color: 'var(--text-muted)' }}>{embedSettings.tpa.url.slice(0, 50)}...</span>
                     </div>
                   </div>
@@ -1596,10 +1603,10 @@ export function App() {
             {/* TOKENS */}
             {adminSidebarMenu === 'tokens' && (
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <div className="admin-section-head">
                   <div>
-                    <h2 style={{ fontSize: '1.35rem' }}>Manajemen Token Ujian</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem' }}>
+                    <h2>Manajemen Token Ujian</h2>
+                    <p>
                       Kelola token untuk Hari 1 (TOEFL) dan Hari 2 (TPA)
                     </p>
                   </div>
@@ -1635,7 +1642,7 @@ export function App() {
                           </td>
                           <td>
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{tok.code}</span>
+                              <span className="token-code-chip">{tok.code}</span>
                               <button
                                 type="button"
                                 className="btn btn-ghost btn-sm"
@@ -1676,7 +1683,10 @@ export function App() {
             {adminSidebarMenu === 'toefl_embeds' && (
               <div style={{ maxWidth: '780px' }}>
                 <div className="clean-card">
-                  <h2 style={{ fontSize: '1.35rem', marginBottom: '0.25rem' }}>Pengaturan 3 Link Form TOEFL Like</h2>
+                  <h2 style={{ fontSize: '1.35rem', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <span style={{ width: 4, height: 22, borderRadius: 3, background: 'var(--brand-gradient)', display: 'inline-block' }} />
+                    Pengaturan 3 Link Form TOEFL Like
+                  </h2>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem', marginBottom: '1.5rem' }}>
                     Sematkan Google Form resmi untuk masing-masing seksi
                   </p>
@@ -1838,7 +1848,10 @@ export function App() {
             {adminSidebarMenu === 'tpa_embeds' && (
               <div style={{ maxWidth: '640px' }}>
                 <div className="clean-card">
-                  <h2 style={{ fontSize: '1.35rem', marginBottom: '0.25rem' }}>Pengaturan Link Form TPA</h2>
+                  <h2 style={{ fontSize: '1.35rem', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <span style={{ width: 4, height: 22, borderRadius: 3, background: 'var(--violet-gradient)', display: 'inline-block' }} />
+                    Pengaturan Link Form TPA
+                  </h2>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem', marginBottom: '1.5rem' }}>
                     Sematkan Google Form untuk Tes Potensi Akademik
                   </p>
@@ -1892,10 +1905,10 @@ export function App() {
             {/* PARTICIPANTS */}
             {adminSidebarMenu === 'participants' && (
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div className="admin-section-head">
                   <div>
-                    <h2 style={{ fontSize: '1.35rem' }}>Rekap Peserta Mahasiswa</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem' }}>
+                    <h2>Rekap Peserta Mahasiswa</h2>
+                    <p>
                       Data peserta yang terdaftar, termasuk sesi ujian yang masih berlangsung
                     </p>
                   </div>
@@ -2012,7 +2025,7 @@ export function App() {
                             <td>{p.nim}</td>
                             <td>{p.prodi}</td>
                             <td>{p.examType.toUpperCase()}</td>
-                            <td><code>{p.tokenCode}</code></td>
+                            <td><span className="token-code-chip">{p.tokenCode}</span></td>
                             <td>{new Date(p.startedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
                             <td>{p.completedAt ? new Date(p.completedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
                             <td>
