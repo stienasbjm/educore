@@ -196,7 +196,29 @@ export function App() {
     const updateRemainingTime = () => {
       const seconds = Math.max(0, Math.ceil((sectionEndsAt - Date.now()) / 1000));
       setRemainingSeconds(seconds);
-      if (seconds === 0) setTimerRunning(false);
+      if (seconds === 0) {
+        setTimerRunning(false);
+        // Auto-submit when time expires
+        if (currentParticipant && currentScreen === 'student_exam') {
+          const updated = StorageService.completeParticipantExam(currentParticipant.id);
+          if (updated) {
+            setCurrentParticipant(updated);
+            void SupabaseService.upsertParticipant(updated);
+          }
+          setParticipants(StorageService.getParticipants());
+          StorageService.clearExamSession();
+          void Swal.fire({
+            icon: 'warning',
+            title: 'Waktu Habis',
+            text: 'Waktu pengerjaan telah berakhir. Ujian akan otomatis diselesaikan dan Anda akan keluar dari sesi ujian.',
+            confirmButtonText: 'OK',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+          }).then(() => {
+            setCurrentScreen('student_completed');
+          });
+        }
+      }
     };
 
     updateRemainingTime();
@@ -206,7 +228,7 @@ export function App() {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', updateRemainingTime);
     };
-  }, [sectionEndsAt, timerRunning]);
+  }, [sectionEndsAt, timerRunning, currentParticipant, currentScreen]);
 
   // Format seconds to mm:ss
   const formatTime = (totalSeconds: number) => {
