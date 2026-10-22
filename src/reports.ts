@@ -1,4 +1,5 @@
 import type { ExamType, ParticipantRecord } from './types';
+import { escapeHtml } from './utils';
 
 const REPORT_COLUMNS = [
   'No.',
@@ -19,12 +20,7 @@ const examLabel: Record<ExamType, string> = {
 };
 
 function escapeMarkup(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+  return escapeHtml(value);
 }
 
 function formatDate(value?: string): string {

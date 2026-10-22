@@ -1,0 +1,7 @@
+project_id = "qqjeajnrepmawqjqsuup"
+
+[functions.participant-mutations]
+# verify_jwt = false dipakai supaya function bisa menerima permintaan dari
+# browser peserta (anon). Authorization tetap diperiksa di dalam function:
+# aksi hapus massal hanya boleh oleh pengelola.
+verify_jwt = false

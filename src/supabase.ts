@@ -1,10 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import type { ExamToken, ParticipantRecord, EmbedSettings } from './types';
+import { StorageService } from './storage';
 
 export const SUPABASE_URL = 'https://qqjeajnrepmawqjqsuup.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_i2LzkWSxYnbXpoRjZfJ_gw_-CzvDEVv';
-const ADMIN_USERNAME = import.meta.env.VITE_ADMIN_USERNAME?.trim() ?? '';
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase() ?? '';
+
+// Fallback opsional. Hanya terisi bila variabel env tersebut memang diisi
+// saat proses build. Nilai kosong = tidak ada identitas pengelola yang ikut
+// terpublikasi di bundel browser.
+const LEGACY_ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase() ?? '';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -13,17 +17,77 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 });
 
+export type AdminAuthErrorCode =
+  | 'not-configured'
+  | 'invalid-credentials'
+  | 'email-not-confirmed'
+  | 'service-unavailable'
+  | 'not-authorized'
+  | 'registry-missing';
+
 export class AdminAuthError extends Error {
-  constructor(readonly code: 'not-configured' | 'invalid-credentials' | 'email-not-confirmed' | 'service-unavailable') {
+  constructor(readonly code: AdminAuthErrorCode) {
     super(code);
     this.name = 'AdminAuthError';
   }
 }
 
-export const SupabaseService = {
-  async restoreAdminSession(): Promise<boolean> {
-    if (!ADMIN_EMAIL) return false;
+type AuthUserLike = {
+  email?: string;
+  app_metadata?: Record<string, unknown> | null;
+};
 
+export type AdminIdentityCheck = {
+  isAdmin: boolean;
+  registryAvailable: boolean;
+};
+
+const mapTokenRow = (row: Record<string, unknown>): ExamToken => ({
+  id: row.id as string,
+  code: row.code as string,
+  name: row.name as string,
+  examType: row.exam_type as ExamToken['examType'],
+  isActive: row.is_active as boolean,
+  createdAt: row.created_at as string,
+  usedCount: (row.used_count as number) || 0,
+  maxCapacity: row.max_capacity as number | undefined,
+  examDate: row.exam_date as string | undefined,
+  note: row.note as string | undefined,
+});
+
+export const SupabaseService = {
+  /**
+   * Menentukan apakah pengguna yang sudah login berhak membuka panel.
+   * Urutan prioritas:
+   *  1. app_metadata.role = 'admin' (diset di Supabase Dashboard)
+   *  2. email terdaftar pada tabel `admins` (dibuat oleh supabase_schema.sql)
+   *  3. fallback legacy VITE_ADMIN_EMAIL (hanya bila diisi saat build)
+   */
+  async checkAdminIdentity(user: AuthUserLike | null | undefined): Promise<AdminIdentityCheck> {
+    if (!user) return { isAdmin: false, registryAvailable: true };
+    if (user.app_metadata?.role === 'admin') return { isAdmin: true, registryAvailable: true };
+
+    const email = (user.email ?? '').trim().toLowerCase();
+    if (!email) return { isAdmin: false, registryAvailable: true };
+    if (LEGACY_ADMIN_EMAIL && email === LEGACY_ADMIN_EMAIL) {
+      return { isAdmin: true, registryAvailable: true };
+    }
+
+    const { data, error } = await supabase
+      .from('admins')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Daftar pengelola (tabel admins) tidak dapat dibaca:', error);
+      return { isAdmin: false, registryAvailable: false };
+    }
+
+    return { isAdmin: !!data, registryAvailable: true };
+  },
+
+  async restoreAdminSession(): Promise<boolean> {
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
@@ -38,24 +102,29 @@ export const SupabaseService = {
         console.warn('Supabase could not validate the saved admin session:', userError);
         return false;
       }
-      return userData.user.email?.trim().toLowerCase() === ADMIN_EMAIL;
+
+      const identity = await SupabaseService.checkAdminIdentity(userData.user);
+      if (!identity.isAdmin) {
+        if (!identity.registryAvailable) {
+          await supabase.auth.signOut();
+        }
+        return false;
+      }
+      return true;
     } catch (error) {
       console.warn('Supabase admin session restore failed:', error);
       return false;
     }
   },
 
-  async signInAdmin(username: string, password: string): Promise<void> {
-    if (!ADMIN_USERNAME || !ADMIN_EMAIL) {
-      throw new AdminAuthError('not-configured');
-    }
-
-    if (username.trim() !== ADMIN_USERNAME) {
+  async signInAdmin(email: string, password: string): Promise<void> {
+    const identifier = email.trim().toLowerCase();
+    if (!identifier || !identifier.includes('@')) {
       throw new AdminAuthError('invalid-credentials');
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
+      email: identifier,
       password,
     });
 
@@ -69,10 +138,11 @@ export const SupabaseService = {
       throw new AdminAuthError('service-unavailable');
     }
 
-    if (data.user.email?.toLowerCase() !== ADMIN_EMAIL) {
+    const identity = await SupabaseService.checkAdminIdentity(data.user);
+    if (!identity.isAdmin) {
       const { error: signOutError } = await supabase.auth.signOut();
       if (signOutError) console.error('Supabase sign-out after admin identity mismatch failed:', signOutError);
-      throw new AdminAuthError('invalid-credentials');
+      throw new AdminAuthError(identity.registryAvailable ? 'not-authorized' : 'registry-missing');
     }
   },
 
@@ -93,6 +163,31 @@ export const SupabaseService = {
     } catch {
       return false;
     }
+  },
+
+  /**
+   * Validasi token sesi secara aman. Memakai fungsi database
+   * `check_exam_token` sehingga daftar token tidak pernah bisa dibaca atau
+   * ditebak oleh pengunjung. Bila fungsi belum tersedia (SQL belum
+   * dijalankan),fallsback ke daftar token lokal.
+   */
+  async findActiveToken(code: string): Promise<{ token: ExamToken | null; source: 'server' | 'local' }> {
+    const clean = code.trim();
+    if (!clean) return { token: null, source: 'server' };
+
+    try {
+      const { data, error } = await supabase.rpc('check_exam_token', { token_code: clean });
+      if (!error) {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row) return { token: mapTokenRow(row as Record<string, unknown>), source: 'server' };
+        return { token: null, source: 'server' };
+      }
+      console.warn('Fungsi check_exam_token belum tersedia, memakai daftar token lokal:', error);
+    } catch (err) {
+      console.warn('Fungsi check_exam_token gagal, memakai daftar token lokal:', err);
+    }
+
+    return { token: StorageService.findTokenByCode(clean) ?? null, source: 'local' };
   },
 
   // PARTICIPANTS SYNC
@@ -127,7 +222,32 @@ export const SupabaseService = {
     }
   },
 
+  /**
+   * Menjalankan mutasi peserta lewat Edge Function bila tersedia.
+   * Mengembalikan:
+   *   true  = berhasil
+   *   false = ditolak server
+   *   null  = Edge Function belum ter-deploy -> pakai jalur tabel langsung
+   */
+  async invokeParticipantMutation(payload: Record<string, unknown>): Promise<boolean | null> {
+    try {
+      const { error } = await supabase.functions.invoke('participant-mutations', { body: payload });
+      if (!error) return true;
+      console.warn('Edge Function participant-mutations belum aktif:', error);
+      return null;
+    } catch (err) {
+      console.warn('Edge Function participant-mutations tidak dapat dipanggil:', err);
+      return null;
+    }
+  },
+
   async upsertParticipant(record: ParticipantRecord): Promise<boolean> {
+    const viaFunction = await SupabaseService.invokeParticipantMutation({
+      action: 'upsert',
+      record,
+    });
+    if (viaFunction !== null) return viaFunction;
+
     try {
       const { error } = await supabase.from('participants').upsert(
         [
@@ -160,6 +280,9 @@ export const SupabaseService = {
   },
 
   async clearParticipants(): Promise<boolean> {
+    const viaFunction = await SupabaseService.invokeParticipantMutation({ action: 'clear' });
+    if (viaFunction !== null) return viaFunction;
+
     try {
       const { error } = await supabase.from('participants').delete().neq('id', '0');
       return !error;
@@ -169,6 +292,9 @@ export const SupabaseService = {
   },
 
   async deleteParticipant(id: string): Promise<boolean> {
+    const viaFunction = await SupabaseService.invokeParticipantMutation({ action: 'delete', id });
+    if (viaFunction !== null) return viaFunction;
+
     try {
       const { error } = await supabase.from('participants').delete().eq('id', id);
       if (error) {
@@ -192,18 +318,7 @@ export const SupabaseService = {
 
       if (error || !data) return null;
 
-      return data.map((row) => ({
-        id: row.id,
-        code: row.code,
-        name: row.name,
-        examType: row.exam_type,
-        isActive: row.is_active,
-        createdAt: row.created_at,
-        usedCount: row.used_count || 0,
-        maxCapacity: row.max_capacity,
-        examDate: row.exam_date,
-        note: row.note,
-      }));
+      return data.map((row) => mapTokenRow(row as Record<string, unknown>));
     } catch (err) {
       console.warn('Supabase fetchTokens fallback to local:', err);
       return null;
@@ -259,7 +374,7 @@ export const SupabaseService = {
             key: 'listening',
             name: 'Section 1: Listening Comprehension Questions',
             shortName: 'Listening',
-            url: data.listening_url,
+            url: data.listening_url || '',
             minutes: data.listening_minutes || 35,
             questionCount: 50,
           },
@@ -267,7 +382,7 @@ export const SupabaseService = {
             key: 'structure',
             name: 'Section 2: Structure and Written Expression',
             shortName: 'Structure',
-            url: data.structure_url,
+            url: data.structure_url || '',
             minutes: data.structure_minutes || 25,
             questionCount: 40,
           },
@@ -275,14 +390,14 @@ export const SupabaseService = {
             key: 'reading',
             name: 'Section 3: Reading Comprehension Questions',
             shortName: 'Reading',
-            url: data.reading_url,
+            url: data.reading_url || '',
             minutes: data.reading_minutes || 55,
             questionCount: 50,
           },
         },
         tpa: {
           name: 'Tes Potensi Akademik (TPA) Terpadu',
-          url: data.tpa_url,
+          url: data.tpa_url || '',
           minutes: data.tpa_minutes || 60,
           questionCount: 60,
         },

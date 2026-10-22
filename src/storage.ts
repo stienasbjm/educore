@@ -176,6 +176,10 @@ export function formatEmbedUrl(rawUrl: string): string {
   if (!rawUrl || !rawUrl.trim()) return '';
   let url = rawUrl.trim();
 
+  // Hanya URL https yang boleh dimuat ke iframe/audio. Tanpa validasi ini,
+  // tautan yang tersisip (mis. lewat panel pengaturan) dapat menjalankan skrip.
+  if (!/^https:\/\//i.test(url)) return '';
+
   // If user entered a Google Form shortlink like https://forms.gle/XYZ
   for (const [key, target] of Object.entries(SHORTLINK_MAP)) {
     if (url.includes(key)) {
@@ -208,7 +212,11 @@ export const StorageService = {
       return DEFAULT_TOKENS;
     }
     try {
-      return JSON.parse(stored);
+      const parsed: unknown = JSON.parse(stored);
+      // Data rusak (bukan array / baris tidak valid) tidak boleh membuat
+      // aplikasi error saat memuat daftar token.
+      if (!Array.isArray(parsed)) return DEFAULT_TOKENS;
+      return parsed.filter(isExamToken);
     } catch {
       return DEFAULT_TOKENS;
     }
@@ -295,9 +303,16 @@ export const StorageService = {
 
   addParticipant(record: Omit<ParticipantRecord, 'id'>): ParticipantRecord {
     const participants = this.getParticipants();
+    // Id memakai UUID agar tidak dapat ditebak. Policy RLS hanya mengizinkan
+    // baris yang sedang berjalan dihapus, sehingga id acak ini yang membatasi
+    // siapa saja yang boleh menghapus data peserta.
+    const randomId =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
     const newRecord: ParticipantRecord = {
       ...record,
-      id: `p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: `p-${randomId}`,
     };
     participants.unshift(newRecord);
     this.saveParticipants(participants);

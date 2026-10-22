@@ -42,19 +42,31 @@ Tombol **Kembali ke Login** pada layar pemulihan mengembalikan peserta ke layar 
 
 ## Konfigurasi Supabase
 
-1. Siapkan proyek Supabase dan jalankan `supabase_schema.sql` melalui SQL Editor.
+1. Siapkan proyek Supabase dan **jalankan `supabase_schema.sql` melalui SQL Editor** terlebih dahulu (membuat tabel, constraint, RLS terpisah per peran, tabel `admins`, audit, dan fungsi `check_exam_token`).
 2. Pastikan URL proyek dan anon key pada `src/supabase.ts` menunjuk ke proyek yang benar.
-3. Di Supabase Dashboard, buat user admin di **Authentication → Users** dengan email `arief@stienas-ypb.ac.id`, atur kata sandi admin, lalu pastikan akun terkonfirmasi.
-4. Salin `.env.example` menjadi `.env.local`. Atur `VITE_ADMIN_USERNAME=labterpadu` dan `VITE_ADMIN_EMAIL=arief@stienas-ypb.ac.id`. Atur juga `VITE_STATION_ID` dan `VITE_LISTENING_AUDIO_URL`.
-5. Jalankan `npm install` dan `npm run dev`.
+3. Di Supabase Dashboard, buat user admin di **Authentication → Users** dengan email resmi pengelola, atur kata sandi admin, lalu pastikan akun terkonfirmasi.
+4. Tambahkan email pengelola ke tabel `admins` (sudah diisi oleh `supabase_schema.sql` untuk `arief@stienas-ypb.ac.id`, bisa ditambah bila ada pengelola lain). Alternatif: set `app_metadata.role = 'admin'` pada user di Authentication.
+5. (Opsional, jalur lebih aman) Deploy Edge Function `supabase/functions/participant-mutations` dengan `SUPABASE_SERVICE_ROLE_KEY` untuk mengunci tabel peserta sepenuhnya. Lihat `supabase/config.toml` dan komentar di file function.
+6. Salin `.env.example` menjadi `.env.local`. Atur `VITE_STATION_ID` dan `VITE_LISTENING_AUDIO_URL`. Jangan menyimpan username/kata sandi admin di bundel browser.
+7. Jalankan `npm install` dan `npm run dev`.
 
-Login admin diverifikasi melalui Supabase Auth menggunakan email akun yang dikonfigurasi; kata sandi tidak disimpan atau ditanam ke bundel aplikasi. Terapkan kebijakan Row Level Security Supabase yang membatasi operasi admin sebelum memakai data produksi.
+Login admin menggunakan **email resmi** dan kata sandi Supabase Auth. Akses panel diverifikasi terhadap tabel `admins` atau `app_metadata.role = 'admin'`. Kata sandi tidak disimpan atau ditanam ke bundel aplikasi. Terapkan kebijakan Row Level Security sesuai `supabase_schema.sql` (tanpa kebijakan `USING (true)`). Rekap peserta hanya bisa dibaca oleh pengelola yang sudah login; peserta anonim tidak dapat menarik daftar seluruh nama/NIM.
 
-Jika login ditolak, pastikan user `arief@stienas-ypb.ac.id` berada di proyek Supabase dengan project ref `qqjeajnrepmawqjqsuup`, status emailnya terkonfirmasi, dan gunakan kata sandi yang diset untuk akun Auth tersebut. Reset kata sandi atau konfirmasikan email dari Supabase Dashboard bila perlu.
+Jika login ditolak, pastikan email pengelola terdaftar di tabel `admins`, user berada di proyek Supabase yang benar, email terkonfirmasi, dan gunakan kata sandi yang diset untuk akun Auth tersebut. Reset kata sandi atau konfirmasikan email dari Supabase Dashboard bila perlu.
+
+## Keamanan (peringkat penting)
+
+- **XSS dicegah**: semua data dari peserta (nama, NIM, kode token) di-escape sebelum disisipkan ke dialog/popup.
+- **Pemisahan peran RLS**: `tokens`/`settings` hanya bisa dibaca anon; penulisan wajib oleh pengelola. Peserta anonim dibatasi untuk membuat/memperbarui/menghapus baris *sedang berjalan* miliknya sendiri, tidak bisa mengubah identitas atau menandai orang lain selesai.
+- **ID tidak bisa ditebak**: ID peserta menggunakan UUID.
+- **Validasi token aman**: validasi kode token memakai fungsi `check_exam_token` (SECURITY DEFINER) agar daftar token tidak bisa diburu.
+- **Link form divalidasi**: hanya URL `https://` yang diizinkan dimuat di iframe/audio.
+- **Berlaku prinsip least privilege**: bundel publik tidak menyertakan identitas/kredensial admin.
+- **Jejak penghapusan**: penghapusan peserta dicatat di tabel `participant_deletions`.
 
 ## Deploy ke GitHub Pages
 
-Repository ini memakai sumber GitHub Pages dari branch `main`, folder `/docs`. Pastikan nilai `VITE_ADMIN_USERNAME` dan `VITE_ADMIN_EMAIL` sudah diatur sebelum `npm run build`, lalu commit dan push perubahan di folder `docs/` bersama perubahan sumber. Output build menggunakan base path `/educore/` dan menyertakan `.nojekyll`. File `.env.local` tidak ikut di-push; kata sandi hanya diverifikasi oleh Supabase Auth dan tidak masuk ke bundel. Terapkan RLS Supabase untuk membatasi akses data.
+Repository ini memakai sumber GitHub Pages dari branch `main`, folder `/docs`. Pastikan file `.env.local` telah disiapkan tanpa kredensial admin di bundel publik, lalu `npm run build` untuk menghasilkan output di `docs/`. Jangan menyimpan `VITE_ADMIN_EMAIL`/`VITE_ADMIN_USERNAME` pada env produksi bila ingin meminimalkan eksposur; cukup gunakan tabel `admins` + Supabase Auth. Output build menggunakan base path `/educore/` dan menyertakan `.nojekyll`. File `.env.local` tidak ikut di-push; kata sandi hanya diverifikasi oleh Supabase Auth dan tidak masuk ke bundel. Terapkan RLS Supabase + jalankan `supabase_schema.sql` sebelum mengizinkan akses peserta/pengelola.
 
 ## Siapkan data produksi
 

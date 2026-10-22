@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { StorageService, formatEmbedUrl } from './storage';
 import { downloadExamReportExcel, printExamReport } from './reports';
+import { escapeHtml } from './utils';
 import { AdminAuthError, SupabaseService } from './supabase';
 import type {
   ExamToken,
@@ -95,7 +96,7 @@ export function App() {
   const [timerRunning, setTimerRunning] = useState<boolean>(false);
 
   // Admin State
-  const [adminUsername, setAdminUsername] = useState<string>('');
+  const [adminEmail, setAdminEmail] = useState<string>('');
   const [adminPassword, setAdminPassword] = useState<string>('');
   const [adminError, setAdminError] = useState<string>('');
   const [adminSidebarMenu, setAdminSidebarMenu] = useState<
@@ -182,28 +183,33 @@ export function App() {
       setSupabaseConnected(connected);
     });
 
-    // 1. Fetch Tokens from Supabase (or fallback to local)
-    SupabaseService.fetchTokens().then((cloudTokens) => {
-      if (cloudTokens && cloudTokens.length > 0) {
-        setTokens(cloudTokens);
-        StorageService.saveTokens(cloudTokens);
-      }
-    });
-
-    // 2. Fetch Participants from Supabase
-    SupabaseService.fetchParticipants().then((cloudParticipants) => {
-      if (cloudParticipants && cloudParticipants.length > 0) {
-        setParticipants(cloudParticipants);
-        StorageService.saveParticipants(cloudParticipants);
-      }
-    });
-
-    // 3. Fetch Settings from Supabase
+    // 1. Pengaturan form & durasi ujian dibutuhkan peserta, boleh dibaca anon.
     SupabaseService.fetchSettings().then((cloudSettings) => {
       if (cloudSettings) {
         setEmbedSettings(cloudSettings);
         StorageService.saveSettings(cloudSettings);
       }
+    });
+
+    // 2. Daftar token & rekap peserta hanya diambil untuk pengelola yang sudah
+    //    login. Peserta tidak boleh menarik data seluruh peserta (nama & NIM)
+    //    dan kode token tidak boleh bisa diburu lewat API publik.
+    void SupabaseService.restoreAdminSession().then((hasAdminSession) => {
+      if (!hasAdminSession) return;
+
+      SupabaseService.fetchTokens().then((cloudTokens) => {
+        if (cloudTokens && cloudTokens.length > 0) {
+          setTokens(cloudTokens);
+          StorageService.saveTokens(cloudTokens);
+        }
+      });
+
+      SupabaseService.fetchParticipants().then((cloudParticipants) => {
+        if (cloudParticipants && cloudParticipants.length > 0) {
+          setParticipants(cloudParticipants);
+          StorageService.saveParticipants(cloudParticipants);
+        }
+      });
     });
   }, []);
 
@@ -331,7 +337,7 @@ export function App() {
       icon: 'warning',
       title: 'Batalkan sesi ujian tersimpan?',
       html: participant
-        ? `Sesi milik <strong>${participant.name}</strong> (NIM ${participant.nim}) akan dibatalkan di browser ini.`
+        ? `Sesi milik <strong>${escapeHtml(participant.name)}</strong> (NIM ${escapeHtml(participant.nim)}) akan dibatalkan di browser ini.`
         : 'Sesi ujian yang tersimpan akan dibatalkan di browser ini.',
       showCancelButton: true,
       showDenyButton: true,
@@ -359,7 +365,7 @@ export function App() {
   };
 
   // Handler: Student Token Login
-  const handleStudentTokenLogin = (e: React.FormEvent) => {
+  const handleStudentTokenLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setTokenError('');
     if (!inputToken.trim()) {
@@ -367,9 +373,16 @@ export function App() {
       return;
     }
 
-    const token = StorageService.findTokenByCode(inputToken);
+    // Token divalidasi di server (fungsi check_exam_token) agar kode token
+    // tidak bisa dibaca atau ditebak lewat API publik.
+    const { token, source } = await SupabaseService.findActiveToken(inputToken);
+
     if (!token) {
-      setTokenError('Token tidak ditemukan. Periksa kembali kode token.');
+      setTokenError(
+        source === 'server'
+          ? 'Token tidak ditemukan atau sudah dinonaktifkan. Periksa kembali kode token dari pengawas.'
+          : 'Token tidak ditemukan dan server sedang tidak dapat dihubungi. Hubungi pengawas.',
+      );
       return;
     }
 
@@ -449,6 +462,20 @@ export function App() {
 
     if (!activeToken) return;
 
+    // Kapasitas token dicegak agar satu sesi tidak dipakai melebihi kuota.
+    if (
+      typeof activeToken.maxCapacity === 'number' &&
+      activeToken.maxCapacity > 0 &&
+      (activeToken.usedCount || 0) >= activeToken.maxCapacity
+    ) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Kuota token sudah habis',
+        text: `Token ${activeToken.code} sudah mencapai kapasitas maksimum (${activeToken.maxCapacity} peserta). Hubungi pengawas untuk membuka sesi baru.`,
+      });
+      return;
+    }
+
     const examType = activeToken.examType;
     const examName =
       examType === 'toefl'
@@ -461,7 +488,7 @@ export function App() {
       const result = await Swal.fire({
         icon: 'warning',
         title: 'NIM sudah tercatat',
-        html: `Peserta <strong>${duplicate.name}</strong> dengan NIM yang sama sedang tercatat pada sesi <strong>${duplicate.tokenCode}</strong>. Data lama akan dihapus dan diganti data baru.`,
+        html: `Peserta <strong>${escapeHtml(duplicate.name)}</strong> dengan NIM yang sama sedang tercatat pada sesi <strong>${escapeHtml(duplicate.tokenCode)}</strong>. Data lama akan dihapus dan diganti data baru.`,
         showCancelButton: true,
         confirmButtonText: 'Ganti data lama',
         cancelButtonText: 'Batal',
@@ -551,6 +578,7 @@ export function App() {
         setSavedExamSession(nextSession);
       }
       refreshParticipants();
+      setCurrentParticipant(updatedParticipant);
       void SupabaseService.upsertParticipant(updatedParticipant);
     }
   };
@@ -572,23 +600,44 @@ export function App() {
     setCurrentScreen('student_completed');
   };
 
+  // Memuat ulang data khusus pengelola (token + rekap peserta).
+  const refreshAdminData = () => {
+    SupabaseService.fetchTokens().then((cloudTokens) => {
+      if (cloudTokens && cloudTokens.length > 0) {
+        setTokens(cloudTokens);
+        StorageService.saveTokens(cloudTokens);
+      }
+    });
+    SupabaseService.fetchParticipants().then((cloudParticipants) => {
+      if (cloudParticipants && cloudParticipants.length > 0) {
+        setParticipants(cloudParticipants);
+        StorageService.saveParticipants(cloudParticipants);
+      }
+    });
+  };
+
   // Handler: Admin Login
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminError('');
     try {
-      await SupabaseService.signInAdmin(adminUsername, adminPassword);
+      await SupabaseService.signInAdmin(adminEmail, adminPassword);
       setCurrentScreen('admin_dashboard');
       setAdminPassword('');
+      refreshAdminData();
     } catch (error) {
       console.error('Admin Supabase Auth sign-in failed:', error);
       if (error instanceof AdminAuthError) {
         if (error.code === 'not-configured') {
-          setAdminError('Login admin belum dikonfigurasi. Pastikan VITE_ADMIN_USERNAME dan VITE_ADMIN_EMAIL diatur.');
+          setAdminError('Login admin belum dikonfigurasi. Jalankan supabase_schema.sql dan masukkan email pengelola ke tabel admins.');
+        } else if (error.code === 'not-authorized') {
+          setAdminError('Akun ini sudah login, tetapi emailnya belum terdaftar sebagai pengelola. Minta administrator menambahkan email Anda ke tabel admins pada Supabase.');
+        } else if (error.code === 'registry-missing') {
+          setAdminError('Daftar pengelola belum tersedia. Jalankan supabase_schema.sql di Supabase SQL Editor, lalu coba login kembali.');
         } else if (error.code === 'invalid-credentials') {
-          setAdminError('Login ditolak Supabase. Pastikan user arief@stienas-ypb.ac.id ada di proyek qqjeajnrepmawqjqsuup, emailnya terkonfirmasi, lalu coba kata sandi akun Supabase yang benar. Jika lupa, atur ulang kata sandi dari Supabase Dashboard.');
+          setAdminError('Email atau kata sandi tidak sesuai. Gunakan email resmi pengelola dan kata sandi akun Supabase yang sudah dikonfirmasi.');
         } else if (error.code === 'email-not-confirmed') {
-          setAdminError('Email akun admin belum dikonfirmasi. Konfirmasikan user arief@stienas-ypb.ac.id pada Supabase Dashboard lalu coba lagi.');
+          setAdminError('Email akun pengelola belum dikonfirmasi. Konfirmasikan email tersebut pada Supabase Dashboard lalu coba lagi.');
         } else {
           setAdminError('Supabase Auth tidak dapat dihubungi. Periksa koneksi lalu coba lagi.');
         }
@@ -745,7 +794,7 @@ export function App() {
     const result = await Swal.fire({
       icon: 'warning',
       title: 'Hapus data peserta?',
-      html: `Data <strong>${name}</strong> (NIM ${nim}) akan dihapus permanen dari rekap peserta, lokal dan server.`,
+      html: `Data <strong>${escapeHtml(name)}</strong> (NIM ${escapeHtml(nim)}) akan dihapus permanen dari rekap peserta, lokal dan server.`,
       showCancelButton: true,
       confirmButtonText: 'Ya, hapus',
       cancelButtonText: 'Batal',
@@ -923,14 +972,14 @@ export function App() {
                 {loginMode === 'admin' && (
                   <form className="login-form" onSubmit={handleAdminLogin}>
                     <div className="form-group">
-                      <label className="form-label" htmlFor="admin-username">ID Pengelola</label>
+                      <label className="form-label" htmlFor="admin-username">Email Pengelola</label>
                       <input
                         id="admin-username"
-                        type="text"
+                        type="email"
                         className="form-input"
-                        value={adminUsername}
-                        onChange={(e) => setAdminUsername(e.target.value)}
-                        placeholder="Masukkan ID pengelola"
+                        value={adminEmail}
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        placeholder="nama@stienas-ypb.ac.id"
                         autoComplete="username"
                         required
                       />
@@ -1801,19 +1850,19 @@ export function App() {
                   <div className="admin-links-list">
                     <div className="admin-link-row">
                       <span><span className="admin-link-index">1</span>Listening ({embedSettings.toeflSections.listening.minutes}m):</span>
-                      <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.listening.url.slice(0, 50)}...</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.listening.url?.slice(0, 50) || 'Belum diatur'}...</span>
                     </div>
                     <div className="admin-link-row">
                       <span><span className="admin-link-index">2</span>Structure ({embedSettings.toeflSections.structure.minutes}m):</span>
-                      <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.structure.url.slice(0, 50)}...</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.structure.url?.slice(0, 50) || 'Belum diatur'}...</span>
                     </div>
                     <div className="admin-link-row">
                       <span><span className="admin-link-index">3</span>Reading ({embedSettings.toeflSections.reading.minutes}m):</span>
-                      <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.reading.url.slice(0, 50)}...</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{embedSettings.toeflSections.reading.url?.slice(0, 50) || 'Belum diatur'}...</span>
                     </div>
                     <div className="admin-link-row">
                       <span><span className="admin-link-index">4</span>TPA ({embedSettings.tpa.minutes}m):</span>
-                      <span style={{ color: 'var(--text-muted)' }}>{embedSettings.tpa.url.slice(0, 50)}...</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{embedSettings.tpa.url?.slice(0, 50) || 'Belum diatur'}...</span>
                     </div>
                   </div>
                 </div>
