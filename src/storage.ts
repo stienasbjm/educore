@@ -1,4 +1,11 @@
-import type { EmbedSettings, ExamRecoverySession, ExamToken, ParticipantRecord, ToeflSectionKey } from './types';
+import type {
+  EmbedSettings,
+  ExamRecoverySession,
+  ExamToken,
+  ExamType,
+  ParticipantRecord,
+  ToeflSectionKey,
+} from './types';
 
 const STORAGE_KEYS = {
   TOKENS: 'toefl_tpa_tokens_v4',
@@ -26,7 +33,7 @@ function isParticipantRecord(value: unknown): value is ParticipantRecord {
     typeof record.examName === 'string' &&
     typeof record.tokenCode === 'string' &&
     typeof record.startedAt === 'string' &&
-    record.status === 'in_progress' &&
+    (record.status === 'in_progress' || record.status === 'completed') &&
     typeof record.workstationId === 'string'
   );
 }
@@ -161,64 +168,9 @@ const DEFAULT_SETTINGS: EmbedSettings = {
   },
 };
 
-const DEFAULT_PARTICIPANTS: ParticipantRecord[] = [
-  {
-    id: 'p-1',
-    name: 'Muhammad Farhan Kurniawan',
-    nim: '2110112044',
-    prodi: 'Manajemen',
-    examType: 'toefl',
-    examName: 'TOEFL Like Prediction (3 Seksi)',
-    tokenCode: 'TOEFL-2025',
-    startedAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-    completedAt: new Date(Date.now() - 3600000 * 1).toISOString(),
-    status: 'completed',
-    currentSection: 'Selesai (Section 1-3)',
-    workstationId: 'WS-LAB-01',
-  },
-  {
-    id: 'p-2',
-    name: 'Siti Nurhaliza',
-    nim: '2110112089',
-    prodi: 'Akuntansi',
-    examType: 'toefl',
-    examName: 'TOEFL Like Prediction (3 Seksi)',
-    tokenCode: 'TOEFL-2025',
-    startedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    completedAt: new Date(Date.now() - 3600000 * 0.5).toISOString(),
-    status: 'completed',
-    currentSection: 'Selesai (Section 1-3)',
-    workstationId: 'WS-LAB-02',
-  },
-  {
-    id: 'p-3',
-    name: 'Ahmad Rizky Pratama',
-    nim: '2110113012',
-    prodi: 'Manajemen',
-    examType: 'tpa',
-    examName: 'Tes Potensi Akademik (TPA)',
-    tokenCode: 'TPA-2025',
-    startedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    completedAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-    status: 'completed',
-    currentSection: 'Selesai (TPA)',
-    workstationId: 'WS-LAB-05',
-  },
-  {
-    id: 'p-4',
-    name: 'Dinda Ayu Maharani',
-    nim: '2110112105',
-    prodi: 'Akuntansi',
-    examType: 'tpa',
-    examName: 'Tes Potensi Akademik (TPA)',
-    tokenCode: 'TPA-2025',
-    startedAt: new Date(Date.now() - 1800000).toISOString(),
-    completedAt: undefined,
-    status: 'in_progress',
-    currentSection: 'Pengerjaan TPA',
-    workstationId: 'WS-LAB-07',
-  },
-];
+// Tidak ada data peserta bawaan. Rekap harus hanya berisi peserta yang benar-benar
+// mendaftar, supaya data salah input mudah dikenali dan dapat dihapus manual.
+const DEFAULT_PARTICIPANTS: ParticipantRecord[] = [];
 
 export function formatEmbedUrl(rawUrl: string): string {
   if (!rawUrl || !rawUrl.trim()) return '';
@@ -306,14 +258,24 @@ export const StorageService = {
     this.saveTokens(tokens);
   },
 
+  decrementTokenUsage(tokenCode: string): void {
+    const tokens = this.getTokens().map((t) => {
+      if (t.code.toUpperCase() === tokenCode.toUpperCase()) {
+        return { ...t, usedCount: Math.max(0, (t.usedCount || 0) - 1) };
+      }
+      return t;
+    });
+    this.saveTokens(tokens);
+  },
+
   getParticipants(): ParticipantRecord[] {
     const stored = localStorage.getItem(STORAGE_KEYS.PARTICIPANTS);
-    if (!stored) {
-      localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(DEFAULT_PARTICIPANTS));
-      return DEFAULT_PARTICIPANTS;
-    }
+    if (!stored) return DEFAULT_PARTICIPANTS;
     try {
-      return JSON.parse(stored);
+      const parsed: unknown = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return DEFAULT_PARTICIPANTS;
+      // Abaikan baris rusak agar rekap tidak ikut error saat dirender.
+      return parsed.filter(isParticipantRecord);
     } catch {
       return DEFAULT_PARTICIPANTS;
     }
@@ -321,6 +283,14 @@ export const StorageService = {
 
   saveParticipants(records: ParticipantRecord[]): void {
     localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(records));
+  },
+
+  findParticipantByNim(nim: string, examType: ExamType): ParticipantRecord | undefined {
+    const clean = nim.trim().toLowerCase();
+    return this.getParticipants().find(
+      (participant) =>
+        participant.nim.trim().toLowerCase() === clean && participant.examType === examType,
+    );
   },
 
   addParticipant(record: Omit<ParticipantRecord, 'id'>): ParticipantRecord {
@@ -344,7 +314,7 @@ export const StorageService = {
     }
   },
 
-  completeParticipantExam(recordId: string): ParticipantRecord | undefined {
+  completeParticipantExam(recordId: string, finalSection = 'Selesai Seluruh Ujian'): ParticipantRecord | undefined {
     const participants = this.getParticipants();
     const idx = participants.findIndex((p) => p.id === recordId);
     if (idx >= 0) {
@@ -352,7 +322,7 @@ export const StorageService = {
         ...participants[idx],
         status: 'completed',
         completedAt: new Date().toISOString(),
-        currentSection: 'Selesai Seluruh Ujian',
+        currentSection: finalSection,
       };
       this.saveParticipants(participants);
       return participants[idx];
@@ -387,6 +357,20 @@ export const StorageService = {
     this.saveParticipants([]);
   },
 
+  deleteParticipant(id: string): ParticipantRecord | undefined {
+    const participants = this.getParticipants();
+    const removed = participants.find((p) => p.id === id);
+    if (!removed) return undefined;
+    this.saveParticipants(participants.filter((p) => p.id !== id));
+    // Usage token ikut turun supaya kolom "Pakai" tetap akurat setelah data dihapus.
+    this.decrementTokenUsage(removed.tokenCode);
+    return removed;
+  },
+
+  getStationId(): string {
+    return import.meta.env.VITE_STATION_ID?.trim() || 'LAB-CBT';
+  },
+
   getSettings(): EmbedSettings {
     const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (!stored) {
@@ -394,11 +378,21 @@ export const StorageService = {
       return DEFAULT_SETTINGS;
     }
     try {
-      const parsed = JSON.parse(stored);
-      if (!parsed.toeflSections || !parsed.toeflSections.listening) {
-        return DEFAULT_SETTINGS;
-      }
-      return { ...DEFAULT_SETTINGS, ...parsed };
+      const parsed: unknown = JSON.parse(stored);
+      if (!parsed || typeof parsed !== 'object') return DEFAULT_SETTINGS;
+      const saved = parsed as Partial<EmbedSettings>;
+      // Merge per bagian: data lama yang tidak lengkap tidak boleh membuat
+      // embedSettings.toeflSections.<seksi> menjadi undefined.
+      return {
+        ...DEFAULT_SETTINGS,
+        ...saved,
+        toeflSections: {
+          listening: { ...DEFAULT_SETTINGS.toeflSections.listening, ...saved.toeflSections?.listening },
+          structure: { ...DEFAULT_SETTINGS.toeflSections.structure, ...saved.toeflSections?.structure },
+          reading: { ...DEFAULT_SETTINGS.toeflSections.reading, ...saved.toeflSections?.reading },
+        },
+        tpa: { ...DEFAULT_SETTINGS.tpa, ...saved.tpa },
+      };
     } catch {
       return DEFAULT_SETTINGS;
     }

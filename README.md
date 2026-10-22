@@ -25,6 +25,21 @@ Sesi login pengelola dipertahankan oleh Supabase Auth di storage browser dan dir
 
 Pada panel **Rekap Peserta**, laporan TOEFL Like dan TPA tersedia terpisah. Tombol **Excel (.xls)** mengunduh file SpreadsheetML yang dapat dibuka di Microsoft Excel; tombol **Cetak / PDF** membuka laporan siap cetak, lalu pilih **Simpan sebagai PDF** pada dialog cetak browser. Kedua laporan memuat peserta yang sedang mengerjakan maupun yang sudah selesai, beserta identitas, token, waktu, status, dan posisi seksi. Izinkan pop-up browser untuk membuka laporan cetak.
 
+## Hapus peserta salah input
+
+Setiap baris rekap peserta memiliki tombol **Hapus** pada kolom Aksi. Penghapusan memerlukan konfirmasi dan menghapus data pada perangkat ini sekaligus di Supabase, sehingga baris tersebut tidak muncul kembali saat halaman dimuat ulang. Tombol **Kosongkan** menghapus seluruh rekap peserta (lokal dan server).
+
+Pengawas juga dapat memakai kolom **Posisi seksi** pada laporan Excel/cetak: peserta yang keluar sebelum menyelesaikan ujian tercatat dengan posisi *Keluar sebelum selesai*, sehingga dibedakan dari peserta yang menyelesaikan ujian.
+
+## Keluar dari sesi ujian
+
+Peserta dapat keluar dari sesi ujian kapan saja tanpa harus menyelesaikan seluruh seksi:
+
+- Tombol **Keluar dari Sesi** pada sidebar ruang ujian: menampilkan dua pilihan, yaitu **Keluar, simpan catatan** (data peserta tetap tercatat di rekap dengan status *Keluar*) atau **Keluar & hapus data** (data peserta dihapus dari rekap, berguna bila NIM salah input).
+- Tombol **Batalkan Sesi** pada layar pemulihan sesi (saat halaman dimuat ulang): membatalkan sesi tersimpan tanpa perlu mengingat NIM, dengan pilihan membatalkan sesi saja atau membatalkan sekaligus menghapus data peserta.
+
+Tombol **Kembali ke Login** pada layar pemulihan mengembalikan peserta ke layar masuk tanpa menghapus sesi, sehingga ujian dapat dilanjutkan bila NIM masih diingat. Pendaftaran ulang dengan NIM yang sama saat sesi lama masih berjalan akan meminta konfirmasi dan mengganti data lama, supaya rekap tidak berisi baris ganda.
+
 ## Konfigurasi Supabase
 
 1. Siapkan proyek Supabase dan jalankan `supabase_schema.sql` melalui SQL Editor.

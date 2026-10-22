@@ -105,20 +105,22 @@ export const SupabaseService = {
 
       if (error || !data) return null;
 
-      return data.map((row) => ({
-        id: row.id,
-        name: row.name,
-        nim: row.nim,
-        prodi: row.prodi,
-        examType: row.exam_type,
-        examName: row.exam_name,
-        tokenCode: row.token_code,
-        startedAt: row.started_at,
-        completedAt: row.completed_at || undefined,
-        status: row.status,
-        currentSection: row.current_section || undefined,
-        workstationId: row.workstation_id || 'LAB-CBT',
-      }));
+      return data
+        .filter((row) => typeof row.id === 'string' && typeof row.nim === 'string' && row.nim.trim() !== '')
+        .map((row) => ({
+          id: row.id,
+          name: row.name,
+          nim: row.nim,
+          prodi: row.prodi,
+          examType: row.exam_type,
+          examName: row.exam_name,
+          tokenCode: row.token_code,
+          startedAt: row.started_at,
+          completedAt: row.completed_at || undefined,
+          status: row.status,
+          currentSection: row.current_section || undefined,
+          workstationId: row.workstation_id || 'LAB-CBT',
+        }));
     } catch (err) {
       console.warn('Supabase fetchParticipants fallback to local:', err);
       return null;
@@ -162,6 +164,20 @@ export const SupabaseService = {
       const { error } = await supabase.from('participants').delete().neq('id', '0');
       return !error;
     } catch {
+      return false;
+    }
+  },
+
+  async deleteParticipant(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('participants').delete().eq('id', id);
+      if (error) {
+        console.warn('Supabase deleteParticipant failed:', error);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('Supabase deleteParticipant failed:', err);
       return false;
     }
   },

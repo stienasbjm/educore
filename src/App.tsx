@@ -54,7 +54,12 @@ import type {
 export function App() {
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>(StorageService.getTheme());
-  const [savedExamSession] = useState<ExamRecoverySession | null>(() => StorageService.getExamSession());
+  const [savedExamSession, setSavedExamSession] = useState<ExamRecoverySession | null>(() =>
+    StorageService.getExamSession(),
+  );
+  // Sesi awal hanya dipakai sekali saat memulihkan sesi admin, agar pembatalan
+  // sesi ujian tidak memicu pemeriksaan ulang admin.
+  const initialExamSessionRef = useRef<ExamRecoverySession | null>(savedExamSession);
   const [authCheckComplete, setAuthCheckComplete] = useState<boolean>(false);
 
   // Navigation Screens include recovery confirmation before a saved exam resumes.
@@ -138,11 +143,24 @@ export function App() {
     StorageService.setTheme(theme);
   }, [theme]);
 
+  // Pengaman: layar peserta tidak boleh tampil tanpa data pendukung (layar kosong).
+  useEffect(() => {
+    if (currentScreen === 'student_exam' && !activeToken) {
+      setCurrentScreen('login');
+    }
+    if (currentScreen === 'student_profile' && !activeToken) {
+      setCurrentScreen('login');
+    }
+    if (currentScreen === 'student_resume' && !savedExamSession) {
+      setCurrentScreen('login');
+    }
+  }, [currentScreen, activeToken, savedExamSession]);
+
   useEffect(() => {
     let isMounted = true;
     void SupabaseService.restoreAdminSession().then((hasAdminSession) => {
       if (!isMounted) return;
-      if (hasAdminSession && !savedExamSession) {
+      if (hasAdminSession && !initialExamSessionRef.current) {
         setCurrentScreen('admin_dashboard');
       }
       setAuthCheckComplete(true);
@@ -151,7 +169,7 @@ export function App() {
     return () => {
       isMounted = false;
     };
-  }, [savedExamSession]);
+  }, []);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -205,8 +223,9 @@ export function App() {
             setCurrentParticipant(updated);
             void SupabaseService.upsertParticipant(updated);
           }
-          setParticipants(StorageService.getParticipants());
+          refreshParticipants();
           StorageService.clearExamSession();
+          setSavedExamSession(null);
           void Swal.fire({
             icon: 'warning',
             title: 'Waktu Habis',
@@ -235,6 +254,108 @@ export function App() {
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  // Satu sumber kebenaran untuk daftar peserta: localStorage -> state React.
+  const refreshParticipants = () => {
+    setParticipants(StorageService.getParticipants());
+  };
+
+  // Mengosongkan seluruh state peserta setelah keluar dari sesi ujian.
+  const resetStudentState = () => {
+    setActiveToken(null);
+    setCurrentParticipant(null);
+    setStudentName('');
+    setStudentNim('');
+    setCompletedSections([]);
+    setCurrentToeflSection('listening');
+    setSectionEndsAt(0);
+    setRemainingSeconds(0);
+    setTimerRunning(false);
+  };
+
+  // Keluar dari sesi ujian yang sedang berjalan. Peserta boleh keluar kapan saja
+  // (termasuk ketika NIM yang dimasukkan terlupa) tanpa harus menyelesaikan
+  // seluruh seksi.
+  const exitExamSession = async (mode: 'keep' | 'remove', participant?: ParticipantRecord | null) => {
+    const target = participant ?? currentParticipant;
+
+    if (target) {
+      if (mode === 'remove') {
+        StorageService.deleteParticipant(target.id);
+        void SupabaseService.deleteParticipant(target.id);
+      } else {
+        const updated = StorageService.completeParticipantExam(
+          target.id,
+          'Keluar sebelum selesai',
+        );
+        if (updated) {
+          void SupabaseService.upsertParticipant(updated);
+        }
+      }
+    }
+
+    StorageService.clearExamSession();
+    setSavedExamSession(null);
+    resetStudentState();
+    refreshParticipants();
+    setCurrentScreen('login');
+  };
+
+  const handleExitExamSession = async () => {
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Keluar dari sesi ujian?',
+      html: 'Jawaban yang belum dikirim di Google Form <strong>tidak</strong> tersimpan di EduCore. Pilih cara keluar berikut:',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'Keluar, simpan catatan',
+      denyButtonText: 'Keluar & hapus data',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#d97706',
+      denyButtonColor: '#dc2626',
+    });
+
+    if (result.isConfirmed) {
+      await exitExamSession('keep');
+    } else if (result.isDenied) {
+      await exitExamSession('remove');
+    }
+  };
+
+  // Membatalkan sesi ujian yang tersimpan di browser (mis. NIM terlupa atau
+  // salah input) tanpa harus verfikasi NIM.
+  const handleCancelSavedSession = async () => {
+    const participant = savedExamSession?.participant;
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Batalkan sesi ujian tersimpan?',
+      html: participant
+        ? `Sesi milik <strong>${participant.name}</strong> (NIM ${participant.nim}) akan dibatalkan di browser ini.`
+        : 'Sesi ujian yang tersimpan akan dibatalkan di browser ini.',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'Batalkan sesi',
+      denyButtonText: 'Batalkan & hapus data',
+      cancelButtonText: 'Kembali',
+      confirmButtonColor: '#d97706',
+      denyButtonColor: '#dc2626',
+    });
+
+    if (result.isConfirmed) {
+      await exitExamSession('keep', participant);
+    } else if (result.isDenied) {
+      await exitExamSession('remove', participant);
+    } else {
+      return;
+    }
+
+    await Swal.fire({
+      icon: 'success',
+      title: 'Sesi dibatalkan',
+      text: 'Anda dapat keluar dan mulai sesi baru kapan saja. Hubungi pengawas bila memerlukan bantuan.',
+      confirmButtonText: 'OK',
+    });
   };
 
   // Handler: Student Token Login
@@ -268,6 +389,7 @@ export function App() {
     const session = StorageService.getExamSession();
     if (!session || session.participant.status !== 'in_progress') {
       StorageService.clearExamSession();
+      setSavedExamSession(null);
       setCurrentScreen('login');
       void Swal.fire({
         icon: 'error',
@@ -282,17 +404,28 @@ export function App() {
       return;
     }
 
+    // Data peserta yang sudah dihapus pengelola tidak boleh dihidupkan kembali.
+    const localParticipants = StorageService.getParticipants();
+    const participantExists = localParticipants.some(
+      (participant) => participant.id === session.participant.id,
+    );
+    if (!participantExists) {
+      StorageService.clearExamSession();
+      setSavedExamSession(null);
+      setCurrentScreen('login');
+      void Swal.fire({
+        icon: 'error',
+        title: 'Data peserta sudah dihapus',
+        text: 'Data peserta ini telah dihapus oleh pengelola, sehingga sesi tidak dapat dilanjutkan. Silakan mulai sesi baru.',
+      });
+      return;
+    }
+
     setActiveToken(session.token);
     setStudentName(session.participant.name);
     setStudentNim(session.participant.nim);
     setStudentProdi(session.participant.prodi);
     setCurrentParticipant(session.participant);
-    const localParticipants = StorageService.getParticipants();
-    const participantExists = localParticipants.some((participant) => participant.id === session.participant.id);
-    if (!participantExists) {
-      StorageService.saveParticipants([session.participant, ...localParticipants]);
-    }
-    setParticipants(StorageService.getParticipants());
     setCurrentToeflSection(session.currentToeflSection);
     setCompletedSections(session.completedSections);
     setSectionEndsAt(session.sectionEndsAt);
@@ -303,7 +436,7 @@ export function App() {
   };
 
   // Handler: Student Complete Profile & Enter Exam
-  const handleProfileSubmit = (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentName.trim() || !studentNim.trim()) {
       void Swal.fire({
@@ -322,6 +455,23 @@ export function App() {
         ? 'TOEFL Like Prediction (3 Seksi)'
         : 'Tes Potensi Akademik (TPA)';
 
+    // Cegah NIM ganda yang membuat rekap peserta berantakan.
+    const duplicate = StorageService.findParticipantByNim(studentNim.trim(), examType);
+    if (duplicate && duplicate.status === 'in_progress') {
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: 'NIM sudah tercatat',
+        html: `Peserta <strong>${duplicate.name}</strong> dengan NIM yang sama sedang tercatat pada sesi <strong>${duplicate.tokenCode}</strong>. Data lama akan dihapus dan diganti data baru.`,
+        showCancelButton: true,
+        confirmButtonText: 'Ganti data lama',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#d97706',
+      });
+      if (!result.isConfirmed) return;
+      StorageService.deleteParticipant(duplicate.id);
+      void SupabaseService.deleteParticipant(duplicate.id);
+    }
+
     const newRecord = StorageService.addParticipant({
       name: studentName.trim(),
       nim: studentNim.trim(),
@@ -332,12 +482,12 @@ export function App() {
       startedAt: new Date().toISOString(),
       status: 'in_progress',
       currentSection: examType === 'toefl' ? 'Section 1: Listening' : 'Pengerjaan TPA',
-      workstationId: 'WS-LAB-' + Math.floor(10 + Math.random() * 90),
+      workstationId: StorageService.getStationId(),
     });
 
     // Save to local & sync to Supabase
     setCurrentParticipant(newRecord);
-    setParticipants(StorageService.getParticipants());
+    refreshParticipants();
 
     let sectionDurationSeconds: number;
     if (examType === 'toefl') {
@@ -353,14 +503,16 @@ export function App() {
     const endsAt = Date.now() + sectionDurationSeconds * 1000;
     setSectionEndsAt(endsAt);
     setRemainingSeconds(sectionDurationSeconds);
-    StorageService.saveExamSession({
+    const newSession: ExamRecoverySession = {
       version: 1,
       participant: newRecord,
       token: activeToken,
       currentToeflSection: 'listening',
       completedSections: [],
       sectionEndsAt: endsAt,
-    });
+    };
+    StorageService.saveExamSession(newSession);
+    setSavedExamSession(newSession);
     void SupabaseService.upsertParticipant(newRecord);
     setTimerRunning(true);
     setCurrentScreen('student_exam');
@@ -388,15 +540,17 @@ export function App() {
       ) ?? { ...currentParticipant, currentSection };
       const savedSession = StorageService.getExamSession();
       if (savedSession) {
-        StorageService.saveExamSession({
+        const nextSession: ExamRecoverySession = {
           ...savedSession,
           participant: updatedParticipant,
           currentToeflSection: nextSec,
           completedSections: nextCompletedSections,
           sectionEndsAt: nextSectionEndsAt,
-        });
+        };
+        StorageService.saveExamSession(nextSession);
+        setSavedExamSession(nextSession);
       }
-      setParticipants(StorageService.getParticipants());
+      refreshParticipants();
       void SupabaseService.upsertParticipant(updatedParticipant);
     }
   };
@@ -409,9 +563,10 @@ export function App() {
         setCurrentParticipant(updated);
         void SupabaseService.upsertParticipant(updated);
       }
-      setParticipants(StorageService.getParticipants());
+      refreshParticipants();
     }
     StorageService.clearExamSession();
+    setSavedExamSession(null);
     setTimerRunning(false);
     setIsFinishConfirmModalOpen(false);
     setCurrentScreen('student_completed');
@@ -581,6 +736,33 @@ export function App() {
         text: participants.some((participant) => participant.examType === examType)
           ? 'Izinkan pop-up pada browser untuk membuka laporan, lalu pilih Simpan sebagai PDF pada dialog cetak.'
           : `Belum ada peserta yang tercatat untuk ujian ${examType === 'toefl' ? 'TOEFL Like' : 'TPA'}.`,
+      });
+    }
+  };
+
+  // Hapus satu peserta secara manual (data salah input / NIM asal-asalan).
+  const handleDeleteParticipant = async (id: string, name: string, nim: string) => {
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Hapus data peserta?',
+      html: `Data <strong>${name}</strong> (NIM ${nim}) akan dihapus permanen dari rekap peserta, lokal dan server.`,
+      showCancelButton: true,
+      confirmButtonText: 'Ya, hapus',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#dc2626',
+    });
+
+    if (!result.isConfirmed) return;
+
+    StorageService.deleteParticipant(id);
+    const deletedFromCloud = await SupabaseService.deleteParticipant(id);
+    refreshParticipants();
+
+    if (!deletedFromCloud) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Data terhapus lokal',
+        text: 'Data peserta dihapus pada perangkat ini, tetapi server tidak dapat dihubungi. Periksa koneksi Supabase lalu muat ulang halaman.',
       });
     }
   };
@@ -880,6 +1062,32 @@ export function App() {
                 Lanjutkan ke Ujian <ChevronRight size={16} />
               </button>
             </form>
+
+            <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setResumeNim('');
+                  setResumeError('');
+                  setCurrentScreen('login');
+                }}
+              >
+                Kembali ke Login
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                style={{ flex: 1 }}
+                title="Batalkan sesi tersimpan bila NIM terlupa atau salah input"
+                onClick={() => {
+                  void handleCancelSavedSession();
+                }}
+              >
+                <Trash2 size={13} /> Batalkan Sesi
+              </button>
+            </div>
           </div>
         </main>
       )}
@@ -1150,7 +1358,7 @@ export function App() {
             )}
 
             {/* Sidebar Bottom Controls */}
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.75rem' }}>
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
@@ -1162,6 +1370,20 @@ export function App() {
                 }}
               >
                 <RefreshCw size={13} /> Muat Ulang Form
+              </button>
+
+              {/* Jalur keluar untuk peserta yang salah input / lupa NIM */}
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                style={{ width: '100%' }}
+                title="Keluar dari sesi ujian tanpa harus menyelesaikan semua seksi"
+                onClick={() => {
+                  setIsExamMenuOpen(false);
+                  void handleExitExamSession();
+                }}
+              >
+                <LogOut size={13} /> Keluar dari Sesi
               </button>
             </div>
           </aside>
@@ -1343,10 +1565,8 @@ export function App() {
                 type="button"
                 className="btn btn-primary"
                 onClick={() => {
+                  resetStudentState();
                   setCurrentScreen('login');
-                  setActiveToken(null);
-                  setStudentName('');
-                  setStudentNim('');
                 }}
               >
                 <LogOut size={15} /> Selesai
@@ -1982,7 +2202,8 @@ export function App() {
                         }).then(({ isConfirmed }) => {
                           if (isConfirmed) {
                             StorageService.clearParticipants();
-                            SupabaseService.clearParticipants();
+                            StorageService.clearExamSession();
+                            void SupabaseService.clearParticipants();
                             setParticipants([]);
                           }
                         });
@@ -2008,12 +2229,13 @@ export function App() {
                         <th>Mulai</th>
                         <th>Selesai</th>
                         <th>Status</th>
+                        <th>Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredParticipants.length === 0 ? (
                         <tr>
-                          <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                          <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                             Belum ada data peserta.
                           </td>
                         </tr>
@@ -2029,9 +2251,27 @@ export function App() {
                             <td>{new Date(p.startedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
                             <td>{p.completedAt ? new Date(p.completedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
                             <td>
-                              <span className={`badge ${p.status === 'completed' ? 'badge-active' : 'badge-inactive'}`}>
-                                {p.status === 'completed' ? 'Selesai' : 'Ujian'}
+                              <span
+                                className={`badge ${p.status === 'completed' ? 'badge-active' : 'badge-inactive'}`}
+                                title={p.currentSection || undefined}
+                              >
+                                {p.status === 'completed'
+                                  ? p.currentSection === 'Keluar sebelum selesai'
+                                    ? 'Keluar'
+                                    : 'Selesai'
+                                  : 'Ujian'}
                               </span>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-danger btn-sm"
+                                title={`Hapus data peserta ${p.name}`}
+                                aria-label={`Hapus data peserta ${p.name} (NIM ${p.nim})`}
+                                onClick={() => handleDeleteParticipant(p.id, p.name, p.nim)}
+                              >
+                                <Trash2 size={13} /> Hapus
+                              </button>
                             </td>
                           </tr>
                         ))
