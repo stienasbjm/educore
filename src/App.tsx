@@ -623,7 +623,7 @@ export function App() {
         !authCheckComplete ? (
           <main className="auth-restoring-screen" aria-live="polite">
             <div className="auth-restoring-card">
-              <div className="login-brand-mark"><GraduationCap size={24} /></div>
+              <div className="login-brand-mark"><img src={`${import.meta.env.BASE_URL}logo-stienas.png`} alt="Logo STIENAS" className="login-brand-logo" /></div>
               <span>EduCore</span>
               <LoaderCircle className="auth-restoring-spinner" size={22} />
               <p>Memeriksa sesi dengan aman...</p>
@@ -633,7 +633,7 @@ export function App() {
           <main className="login-wrapper">
             <header className="login-topbar">
               <a className="login-brand" href={import.meta.env.BASE_URL} aria-label="EduCore beranda">
-                <span className="login-brand-mark"><GraduationCap size={23} /></span>
+                <span className="login-brand-mark"><img src={`${import.meta.env.BASE_URL}logo-stienas.png`} alt="Logo STIENAS" className="login-brand-logo" /></span>
                 <span>
                   <strong>EduCore</strong>
                   <small>STIE Nasional Banjarmasin</small>
@@ -1369,7 +1369,7 @@ export function App() {
             <div className="sidebar-header">
               <div className="sidebar-brand-lockup">
                 <div className="sidebar-brand-mark">
-                  <GraduationCap size={21} />
+                  <img src={`${import.meta.env.BASE_URL}logo-stienas.png`} alt="Logo STIENAS" className="sidebar-brand-logo" />
                 </div>
                 <div>
                   <div className="sidebar-brand-title">EduCore</div>

@@ -407,10 +407,14 @@ h1, h2, h3, h4, h5, h6 {
   width: 42px;
   height: 42px;
   flex: 0 0 auto;
-  border-radius: 14px;
-  background: var(--brand-gradient);
-  color: #ffffff;
-  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.38);
+  border-radius: 10px;
+  background: transparent;
+}
+
+.sidebar-brand-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
 }
 
 .sidebar-header-actions {
@@ -801,11 +805,14 @@ h1, h2, h3, h4, h5, h6 {
   width: 44px;
   height: 44px;
   flex: 0 0 auto;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 14px;
-  background: linear-gradient(145deg, #4f8cff, #2563eb 56%, #194bc4);
-  color: #fff;
-  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28);
+  border-radius: 10px;
+  background: transparent;
+}
+
+.login-brand-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
 }
 
 .login-showcase {
@@ -1955,6 +1962,10 @@ input:checked + .slider:before {
     min-height: 52px;
   }
   .login-brand-mark {
+    width: 40px;
+    height: 40px;
+  }
+  .login-brand-logo {
     width: 40px;
     height: 40px;
   }
