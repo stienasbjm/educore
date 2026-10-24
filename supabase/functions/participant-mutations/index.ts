@@ -27,7 +27,11 @@ const service = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    },
   });
 
 /** Mengcek apakah pemohon adalah pengelola yang sah. */
@@ -61,6 +65,13 @@ const isFilled = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0;
 
 serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    },
+  });
   if (req.method !== 'POST') {
     return json({ error: 'method_not_allowed' }, 405);
   }
@@ -91,9 +102,58 @@ serve(async (req) => {
         return json({ error: 'invalid_record' }, 400);
       }
 
-      // Peserta (bukan pengelola) hanya boleh menyimpan status berjalan.
-      if (!admin && (record.status !== 'in_progress' || record.completedAt)) {
-        return json({ error: 'forbidden_completion' }, 403);
+      if (!['Akuntansi', 'Manajemen'].includes(record.prodi as string)
+        || !['toefl', 'tpa'].includes(record.examType as string)
+        || !['in_progress', 'completed'].includes(record.status as string)) {
+        return json({ error: 'invalid_record_values' }, 400);
+      }
+
+      const { data: existing, error: existingError } = await service
+        .from('participants')
+        .select('id, name, nim, prodi, exam_type, exam_name, token_code, started_at, status, completed_at, workstation_id')
+        .eq('id', record.id)
+        .maybeSingle();
+      if (existingError) return json({ error: 'participant_lookup_failed' }, 503);
+
+      if (!admin && existing) {
+        // The browser may update progress and finish its own row, but may not
+        // rewrite identity, token, start time, or workstation ownership.
+        const immutableMatches = existing.name === record.name
+          && existing.nim === record.nim
+          && existing.prodi === record.prodi
+          && existing.exam_type === record.examType
+          && existing.exam_name === record.examName
+          && existing.token_code === record.tokenCode
+          && existing.started_at === record.startedAt
+          && existing.workstation_id === record.workstationId;
+        if (!immutableMatches || existing.status === 'completed') {
+          return json({ error: 'participant_identity_mismatch' }, 403);
+        }
+      }
+
+      // New participant rows can only be started with an active token. A
+      // completion is accepted only as a transition of an existing row.
+      if (!existing && (!admin || record.status !== 'in_progress')) {
+        return json({ error: 'invalid_participant_transition' }, 403);
+      }
+      if (!existing) {
+        const { data: token, error: tokenError } = await service
+          .from('tokens')
+          .select('code, is_active, exam_type, used_count, max_capacity')
+          .eq('code', record.tokenCode)
+          .maybeSingle();
+        if (tokenError || !token || !token.is_active || token.exam_type !== record.examType) {
+          return json({ error: 'invalid_token' }, 403);
+        }
+        if (token.max_capacity && token.used_count >= token.max_capacity) {
+          return json({ error: 'token_capacity_reached' }, 409);
+        }
+      }
+      if (record.status === 'completed' && !record.completedAt) {
+        return json({ error: 'completed_at_required' }, 400);
+      }
+      if (record.status === 'in_progress' && record.completedAt) {
+        return json({ error: 'invalid_completion_state' }, 400);
       }
 
       const row = {

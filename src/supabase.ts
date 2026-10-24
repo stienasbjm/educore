@@ -233,6 +233,12 @@ export const SupabaseService = {
     try {
       const { error } = await supabase.functions.invoke('participant-mutations', { body: payload });
       if (!error) return true;
+
+      // A rejected request must never fall through to the legacy table path.
+      // Only a missing/unreachable function may use the compatibility path.
+      const status = (error as { status?: number; context?: { status?: number } }).status
+        ?? (error as { context?: { status?: number } }).context?.status;
+      if (status && status >= 400 && status < 500 && status !== 404) return false;
       console.warn('Edge Function participant-mutations belum aktif:', error);
       return null;
     } catch (err) {
@@ -323,6 +329,30 @@ export const SupabaseService = {
       console.warn('Supabase fetchTokens fallback to local:', err);
       return null;
     }
+  },
+
+  /**
+   * Memulihkan daftar token dari server untuk admin. Saat instalasi baru
+   * belum memiliki baris token, token lokal bawaan diunggah sekali oleh admin.
+   * Peserta tidak pernah menjalankan jalur unggah ini.
+   */
+  async syncTokensForAdmin(): Promise<ExamToken[] | null> {
+    const cloudTokens = await SupabaseService.fetchTokens();
+    if (cloudTokens === null) return null;
+
+    if (cloudTokens.length > 0) {
+      StorageService.saveTokens(cloudTokens);
+      return cloudTokens;
+    }
+
+    const localTokens = StorageService.getTokens();
+    const results = await Promise.all(localTokens.map((token) => SupabaseService.upsertToken(token)));
+    if (results.every(Boolean)) {
+      StorageService.saveTokens(localTokens);
+      return localTokens;
+    }
+    // Keep the working local copy if the admin session cannot write yet.
+    return null;
   },
 
   async upsertToken(token: ExamToken): Promise<boolean> {

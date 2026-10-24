@@ -197,8 +197,8 @@ export function App() {
     void SupabaseService.restoreAdminSession().then((hasAdminSession) => {
       if (!hasAdminSession) return;
 
-      SupabaseService.fetchTokens().then((cloudTokens) => {
-        if (cloudTokens && cloudTokens.length > 0) {
+      SupabaseService.syncTokensForAdmin().then((cloudTokens) => {
+        if (cloudTokens) {
           setTokens(cloudTokens);
           StorageService.saveTokens(cloudTokens);
         }
