@@ -64,36 +64,38 @@ async function isAdmin(req: Request): Promise<boolean> {
 const isFilled = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0;
 
-type TokenReservation = 'reserved' | 'invalid_token' | 'token_capacity_reached' | 'token_reservation_conflict' | 'token_lookup_failed';
+type TokenReservationStatus = 'reserved' | 'invalid_token' | 'token_capacity_reached' | 'token_reservation_conflict' | 'token_lookup_failed';
+type TokenReservation = { status: TokenReservationStatus; code?: string };
 
 /** Atomically increments token usage, retrying if another start changed it first. */
 async function reserveTokenUsage(code: string, examType: string): Promise<TokenReservation> {
+  const requestedCode = code.trim();
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const { data: token, error } = await service
       .from('tokens')
       .select('code, is_active, exam_type, used_count, max_capacity')
-      .eq('code', code)
+      .ilike('code', requestedCode)
       .maybeSingle();
-    if (error) return 'token_lookup_failed';
-    if (!token || !token.is_active || token.exam_type !== examType) return 'invalid_token';
+    if (error) return { status: 'token_lookup_failed' };
+    if (!token || !token.is_active || token.exam_type !== examType) return { status: 'invalid_token' };
 
     const usedCount = token.used_count ?? 0;
-    if (token.max_capacity && usedCount >= token.max_capacity) return 'token_capacity_reached';
+    if (token.max_capacity && usedCount >= token.max_capacity) return { status: 'token_capacity_reached' };
 
     const { data: reserved, error: reserveError } = await service
       .from('tokens')
       .update({ used_count: usedCount + 1 })
-      .eq('code', code)
+      .eq('code', token.code)
       .eq('is_active', true)
       .eq('exam_type', examType)
       .eq('used_count', usedCount)
       .select('code')
       .maybeSingle();
-    if (reserveError) return 'token_lookup_failed';
-    if (reserved) return 'reserved';
+    if (reserveError) return { status: 'token_lookup_failed' };
+    if (reserved) return { status: 'reserved', code: token.code };
   }
 
-  return 'token_reservation_conflict';
+  return { status: 'token_reservation_conflict' };
 }
 
 /** Compensates a reservation when participant creation fails, or a row is deleted. */
@@ -151,7 +153,7 @@ serve(async (req) => {
       const { data: token, error } = await service
         .from('tokens')
         .select('id, code, name, exam_type, is_active, created_at, used_count, max_capacity, exam_date, note')
-        .eq('code', code.trim().toUpperCase())
+        .ilike('code', code.trim())
         .eq('is_active', true)
         .maybeSingle();
       if (error) return json({ error: 'token_lookup_failed' }, 503);
@@ -233,11 +235,12 @@ serve(async (req) => {
       let reservedTokenCode: string | null = null;
       if (!existing) {
         const reservation = await reserveTokenUsage(record.tokenCode as string, record.examType as string);
-        if (reservation !== 'reserved') {
-          const status = reservation === 'token_capacity_reached' ? 409 : reservation === 'invalid_token' ? 403 : 503;
-          return json({ error: reservation }, status);
+        if (reservation.status !== 'reserved') {
+          const status = reservation.status === 'token_capacity_reached' ? 409 : reservation.status === 'invalid_token' ? 403 : 503;
+          return json({ error: reservation.status }, status);
         }
-        reservedTokenCode = record.tokenCode as string;
+        reservedTokenCode = reservation.code ?? (record.tokenCode as string).trim();
+        record.tokenCode = reservedTokenCode;
       }
 
       const row = {
