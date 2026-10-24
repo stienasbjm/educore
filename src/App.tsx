@@ -135,6 +135,8 @@ export function App() {
   const [isFinishConfirmModalOpen, setIsFinishConfirmModalOpen] = useState<boolean>(false);
   const [copyFeedback, setCopyFeedback] = useState<string>('');
   const [audioError, setAudioError] = useState<boolean>(false);
+  const [listeningAudioFile, setListeningAudioFile] = useState<File | null>(null);
+  const [isUploadingListeningAudio, setIsUploadingListeningAudio] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -757,20 +759,36 @@ export function App() {
 
   const handleSaveEmbedSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    const settingsToSave = {
-      ...embedSettings,
-      listeningAudioUrl: formatAudioUrl(embedSettings.listeningAudioUrl),
-    };
-    setEmbedSettings(settingsToSave);
-    StorageService.saveSettings(settingsToSave);
-    const savedToCloud = await SupabaseService.saveSettings(settingsToSave);
-    await Swal.fire({
-      icon: savedToCloud ? 'success' : 'warning',
-      title: savedToCloud ? 'Pengaturan tersimpan' : 'Tersimpan di perangkat ini',
-      text: savedToCloud
-        ? 'Pengaturan link sematan Google Form dan waktu ujian berhasil disimpan.'
-        : 'Pengaturan tersimpan lokal, tetapi gagal disinkronkan ke Supabase.',
-    });
+    setIsUploadingListeningAudio(true);
+    try {
+      let listeningAudioUrl = embedSettings.listeningAudioUrl;
+      if (listeningAudioFile) {
+        listeningAudioUrl = await SupabaseService.uploadListeningAudio(listeningAudioFile);
+      }
+      const settingsToSave = {
+        ...embedSettings,
+        listeningAudioUrl: formatAudioUrl(listeningAudioUrl),
+      };
+      setEmbedSettings(settingsToSave);
+      StorageService.saveSettings(settingsToSave);
+      const savedToCloud = await SupabaseService.saveSettings(settingsToSave);
+      if (savedToCloud) setListeningAudioFile(null);
+      await Swal.fire({
+        icon: savedToCloud ? 'success' : 'warning',
+        title: savedToCloud ? 'Pengaturan tersimpan' : 'Tersimpan di perangkat ini',
+        text: savedToCloud
+          ? 'Audio dan pengaturan ujian berhasil disimpan untuk semua peserta.'
+          : 'Pengaturan tersimpan lokal, tetapi gagal disinkronkan ke Supabase. Peserta di perangkat lain belum menerima perubahan.',
+      });
+    } catch (error) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Audio gagal diunggah',
+        text: error instanceof Error ? error.message : 'Periksa koneksi dan kebijakan Storage Supabase.',
+      });
+    } finally {
+      setIsUploadingListeningAudio(false);
+    }
   };
 
   const handleDownloadExamReport = (examType: ExamType) => {
@@ -1505,7 +1523,7 @@ export function App() {
             {/* Audio Strip */}
             {activeToken.examType === 'toefl' &&
               currentToeflSection === 'listening' &&
-              embedSettings.listeningAudioUrl && (
+              embedSettings.listeningAudioEnabled !== false && embedSettings.listeningAudioUrl && (
                   <div className="audio-listening-strip">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Headphones size={18} color="var(--primary)" />
@@ -1526,7 +1544,8 @@ export function App() {
                   </audio>
                   {audioError && (
                     <small style={{ color: '#dc2626', display: 'block' }}>
-                      Audio tidak dapat diputar. Pastikan file dapat diakses publik dan berformat MP3.
+                      Audio gagal dimuat. Tautan Google Drive publik tetap dapat diblokir atau mengirim halaman konfirmasi.
+                      Gunakan tautan unduhan langsung MP3/MP4 audio (mis. Supabase Storage Public URL), lalu simpan ulang.
                     </small>
                   )}
                 </div>
@@ -2020,6 +2039,9 @@ export function App() {
                         </div>
                         <div style={{ flex: 1 }}>
                           <label className="form-label">Audio URL (MP3)</label>
+                          <small style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                            Tempel tautan file audio langsung. Google Drive dikonversi otomatis, tetapi untuk ujian paling stabil gunakan URL publik langsung dari Supabase Storage atau hosting file yang mendukung streaming/range request.
+                          </small>
                           <input
                             type="url"
                             className="form-input"
@@ -2027,6 +2049,29 @@ export function App() {
                             onChange={(e) => setEmbedSettings({ ...embedSettings, listeningAudioUrl: e.target.value })}
                             placeholder="URL File Audio"
                           />
+                          <label className="form-label" style={{ marginTop: '0.75rem' }}>Atau unggah file audio (maks. 50 MB)</label>
+                          <input
+                            type="file"
+                            className="form-input"
+                            accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/webm,.mp3,.wav,.ogg,.m4a,.aac,.webm"
+                            onChange={(e) => setListeningAudioFile(e.target.files?.[0] ?? null)}
+                          />
+                          {listeningAudioFile && (
+                            <small style={{ display: 'block', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                              Dipilih: {listeningAudioFile.name} · unggah saat menekan tombol simpan.
+                            </small>
+                          )}
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', marginTop: '0.8rem', fontSize: '0.85rem' }}>
+                            <input
+                              type="checkbox"
+                              checked={embedSettings.listeningAudioEnabled !== false}
+                              onChange={(e) => setEmbedSettings({ ...embedSettings, listeningAudioEnabled: e.target.checked })}
+                            />
+                            Tampilkan pemutar audio untuk peserta
+                          </label>
+                          <small style={{ display: 'block', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
+                            Matikan saat ujian tatap muka. File tetap tersimpan dan dapat ditampilkan kembali kapan saja.
+                          </small>
                         </div>
                       </div>
                     </div>
@@ -2119,8 +2164,8 @@ export function App() {
                       </div>
                     </div>
 
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-                      Simpan Pengaturan TOEFL
+                      <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isUploadingListeningAudio}>
+                        {isUploadingListeningAudio ? 'Menyimpan audio dan pengaturan…' : 'Simpan Pengaturan TOEFL'}
                     </button>
                   </form>
                 </div>

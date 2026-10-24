@@ -132,6 +132,7 @@ const DEFAULT_SETTINGS: EmbedSettings = {
   institutionName: 'STIE Nasional Banjarmasin',
   activeExamSchedule: 'both',
   listeningAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+  listeningAudioEnabled: true,
   instructionToefl: 'Ujian TOEFL Like terdiri dari 3 seksi berurutan: Listening Comprehension (35 menit), Structure & Written Expression (25 menit), dan Reading Comprehension (55 menit). Waktu akan berjalan otomatis.',
   instructionTpa: 'Ujian Tes Potensi Akademik (TPA) dilaksanakan pada jadwal terpisah dengan durasi 60 menit. Jawablah soal kemampuan verbal, numerik, dan penalaran logika sebaik-baiknya.',
   toeflSections: {
@@ -203,10 +204,15 @@ export function formatAudioUrl(rawUrl: string | undefined): string {
 
   try {
     const parsed = new URL(url);
-    if (parsed.hostname === 'drive.google.com') {
+    if (parsed.hostname === 'drive.google.com' || parsed.hostname === 'docs.google.com') {
       const fileMatch = parsed.pathname.match(/^\/file\/d\/([^/]+)/i);
       const fileId = fileMatch?.[1] || parsed.searchParams.get('id');
-      if (fileId) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
+      if (fileId) {
+        // Drive's legacy /uc endpoint can return an HTML confirmation page,
+        // which <audio> cannot decode. The usercontent download endpoint is
+        // more consistently served as the actual file for public Drive items.
+        return `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download`;
+      }
     }
 
     if (parsed.hostname === 'dropbox.com' || parsed.hostname.endsWith('.dropbox.com')) {

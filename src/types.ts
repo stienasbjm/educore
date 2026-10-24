@@ -67,6 +67,7 @@ export type EmbedSettings = {
   };
   tpa: TpaConfig;
   listeningAudioUrl?: string;
+  listeningAudioEnabled?: boolean;
   instructionToefl: string;
   instructionTpa: string;
   activeExamSchedule: 'toefl' | 'tpa' | 'both';

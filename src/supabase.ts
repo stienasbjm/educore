@@ -413,6 +413,7 @@ export const SupabaseService = {
         institutionName: data.institution_name || 'STIE Nasional Banjarmasin',
         activeExamSchedule: data.active_exam_schedule || 'both',
         listeningAudioUrl: formatAudioUrl(data.listening_audio_url || ''),
+        listeningAudioEnabled: data.listening_audio_enabled ?? true,
         instructionToefl: data.instruction_toefl || '',
         instructionTpa: data.instruction_tpa || '',
         toeflSections: {
@@ -461,6 +462,7 @@ export const SupabaseService = {
           institution_name: settings.institutionName,
           active_exam_schedule: settings.activeExamSchedule,
           listening_audio_url: formatAudioUrl(settings.listeningAudioUrl),
+          listening_audio_enabled: settings.listeningAudioEnabled ?? true,
           instruction_toefl: settings.instructionToefl,
           instruction_tpa: settings.instructionTpa,
           listening_url: settings.toeflSections.listening.url,
@@ -477,5 +479,31 @@ export const SupabaseService = {
     } catch {
       return false;
     }
+  },
+
+  async uploadListeningAudio(file: File): Promise<string> {
+    const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/mp4', 'audio/aac', 'audio/webm'];
+    const mimeByExtension: Record<string, string> = {
+      mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4', aac: 'audio/aac', webm: 'audio/webm',
+    };
+    const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+    const contentType = allowedTypes.includes(file.type) ? file.type : mimeByExtension[extension];
+    if (!contentType) {
+      throw new Error('Format tidak didukung. Gunakan MP3, WAV, OGG, M4A/AAC, atau WebM.');
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      throw new Error('Ukuran audio maksimal 50 MB.');
+    }
+    const { error } = await supabase.storage
+      .from('listening-audio')
+      .upload('listening/current-audio', file, {
+        cacheControl: '60',
+        contentType,
+        // Replacing one stable object path prevents each upload from adding
+        // another copy of the listening track to Storage.
+        upsert: true,
+      });
+    if (error) throw new Error(error.message);
+    return supabase.storage.from('listening-audio').getPublicUrl('listening/current-audio').data.publicUrl;
   },
 };
