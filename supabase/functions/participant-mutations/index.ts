@@ -86,6 +86,35 @@ serve(async (req) => {
   const admin = await isAdmin(req);
 
   switch (body?.action) {
+    case 'validate-token': {
+      const code = body.code;
+      if (!isFilled(code)) return json({ error: 'invalid_token_code' }, 400);
+
+      const { data: token, error } = await service
+        .from('tokens')
+        .select('id, code, name, exam_type, is_active, created_at, used_count, max_capacity, exam_date, note')
+        .eq('code', code.trim().toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle();
+      if (error) return json({ error: 'token_lookup_failed' }, 503);
+      if (!token) return json({ token: null });
+
+      return json({
+        token: {
+          id: token.id,
+          code: token.code,
+          name: token.name,
+          exam_type: token.exam_type,
+          is_active: token.is_active,
+          created_at: token.created_at,
+          used_count: token.used_count ?? 0,
+          max_capacity: token.max_capacity,
+          exam_date: token.exam_date,
+          note: token.note,
+        },
+      });
+    }
+
     case 'upsert': {
       const record = body.record as Record<string, unknown> | undefined;
       if (

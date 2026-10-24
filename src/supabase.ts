@@ -175,6 +175,22 @@ export const SupabaseService = {
     const clean = code.trim();
     if (!clean) return { token: null, source: 'server' };
 
+    // Prefer the Edge Function because it does not depend on the PostgREST
+    // schema cache being refreshed after a database migration.
+    try {
+      const { data, error } = await supabase.functions.invoke('participant-mutations', {
+        body: { action: 'validate-token', code: clean },
+      });
+      if (!error) {
+        const token = data?.token;
+        return token
+          ? { token: mapTokenRow(token as Record<string, unknown>), source: 'server' }
+          : { token: null, source: 'server' };
+      }
+    } catch {
+      // Continue to the RPC for installations that already have the migration.
+    }
+
     try {
       const { data, error } = await supabase.rpc('check_exam_token', { token_code: clean });
       if (!error) {
