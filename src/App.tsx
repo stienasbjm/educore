@@ -602,8 +602,8 @@ export function App() {
 
   // Memuat ulang data khusus pengelola (token + rekap peserta).
   const refreshAdminData = () => {
-    SupabaseService.fetchTokens().then((cloudTokens) => {
-      if (cloudTokens && cloudTokens.length > 0) {
+    SupabaseService.syncTokensForAdmin().then((cloudTokens) => {
+      if (cloudTokens) {
         setTokens(cloudTokens);
         StorageService.saveTokens(cloudTokens);
       }
