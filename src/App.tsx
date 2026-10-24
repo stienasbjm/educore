@@ -38,7 +38,7 @@ import {
   LoaderCircle,
   ClipboardCheck
 } from 'lucide-react';
-import { StorageService, formatEmbedUrl } from './storage';
+import { StorageService, formatAudioUrl, formatEmbedUrl } from './storage';
 import { downloadExamReportExcel, printExamReport } from './reports';
 import { escapeHtml } from './utils';
 import { AdminAuthError, SupabaseService } from './supabase';
@@ -134,6 +134,7 @@ export function App() {
   const [previewTitle, setPreviewTitle] = useState<string>('');
   const [isFinishConfirmModalOpen, setIsFinishConfirmModalOpen] = useState<boolean>(false);
   const [copyFeedback, setCopyFeedback] = useState<string>('');
+  const [audioError, setAudioError] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -756,8 +757,13 @@ export function App() {
 
   const handleSaveEmbedSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    StorageService.saveSettings(embedSettings);
-    const savedToCloud = await SupabaseService.saveSettings(embedSettings);
+    const settingsToSave = {
+      ...embedSettings,
+      listeningAudioUrl: formatAudioUrl(embedSettings.listeningAudioUrl),
+    };
+    setEmbedSettings(settingsToSave);
+    StorageService.saveSettings(settingsToSave);
+    const savedToCloud = await SupabaseService.saveSettings(settingsToSave);
     await Swal.fire({
       icon: savedToCloud ? 'success' : 'warning',
       title: savedToCloud ? 'Pengaturan tersimpan' : 'Tersimpan di perangkat ini',
@@ -1500,7 +1506,7 @@ export function App() {
             {activeToken.examType === 'toefl' &&
               currentToeflSection === 'listening' &&
               embedSettings.listeningAudioUrl && (
-                <div className="audio-listening-strip">
+                  <div className="audio-listening-strip">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Headphones size={18} color="var(--primary)" />
                     <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>
@@ -1510,11 +1516,19 @@ export function App() {
                   <audio
                     controls
                     controlsList="nodownload"
+                    preload="metadata"
                     style={{ height: '32px', maxWidth: '380px', width: '100%' }}
-                    src={embedSettings.listeningAudioUrl}
+                    src={formatAudioUrl(embedSettings.listeningAudioUrl)}
+                    onCanPlay={() => setAudioError(false)}
+                    onError={() => setAudioError(true)}
                   >
                     Browser Anda tidak mendukung audio.
                   </audio>
+                  {audioError && (
+                    <small style={{ color: '#dc2626', display: 'block' }}>
+                      Audio tidak dapat diputar. Pastikan file dapat diakses publik dan berformat MP3.
+                    </small>
+                  )}
                 </div>
               )}
 

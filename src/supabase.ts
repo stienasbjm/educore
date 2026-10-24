@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { ExamToken, ParticipantRecord, EmbedSettings } from './types';
-import { StorageService } from './storage';
+import { StorageService, formatAudioUrl } from './storage';
 
 export const SUPABASE_URL = 'https://qqjeajnrepmawqjqsuup.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_i2LzkWSxYnbXpoRjZfJ_gw_-CzvDEVv';
@@ -412,7 +412,7 @@ export const SupabaseService = {
       return {
         institutionName: data.institution_name || 'STIE Nasional Banjarmasin',
         activeExamSchedule: data.active_exam_schedule || 'both',
-        listeningAudioUrl: data.listening_audio_url || '',
+        listeningAudioUrl: formatAudioUrl(data.listening_audio_url || ''),
         instructionToefl: data.instruction_toefl || '',
         instructionTpa: data.instruction_tpa || '',
         toeflSections: {
@@ -460,7 +460,7 @@ export const SupabaseService = {
           id: 'primary',
           institution_name: settings.institutionName,
           active_exam_schedule: settings.activeExamSchedule,
-          listening_audio_url: settings.listeningAudioUrl,
+          listening_audio_url: formatAudioUrl(settings.listeningAudioUrl),
           instruction_toefl: settings.instructionToefl,
           instruction_tpa: settings.instructionTpa,
           listening_url: settings.toeflSections.listening.url,

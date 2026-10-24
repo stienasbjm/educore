@@ -195,6 +195,32 @@ export function formatEmbedUrl(rawUrl: string): string {
   return `${url}${separator}embedded=true`;
 }
 
+/** Convert common file-sharing links to a URL that an HTML audio element can play. */
+export function formatAudioUrl(rawUrl: string | undefined): string {
+  if (!rawUrl || !rawUrl.trim()) return '';
+  const url = rawUrl.trim();
+  if (!/^https:\/\//i.test(url)) return '';
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'drive.google.com') {
+      const fileMatch = parsed.pathname.match(/^\/file\/d\/([^/]+)/i);
+      const fileId = fileMatch?.[1] || parsed.searchParams.get('id');
+      if (fileId) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
+    }
+
+    if (parsed.hostname === 'dropbox.com' || parsed.hostname.endsWith('.dropbox.com')) {
+      parsed.searchParams.set('raw', '1');
+      parsed.searchParams.delete('dl');
+      return parsed.toString();
+    }
+  } catch {
+    return '';
+  }
+
+  return url;
+}
+
 export const StorageService = {
   getTheme(): 'dark' | 'light' {
     const stored = localStorage.getItem(STORAGE_KEYS.THEME);
