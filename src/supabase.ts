@@ -166,17 +166,13 @@ export const SupabaseService = {
   },
 
   /**
-   * Validasi token sesi secara aman. Memakai fungsi database
-   * `check_exam_token` sehingga daftar token tidak pernah bisa dibaca atau
-   * ditebak oleh pengunjung. Bila fungsi belum tersedia (SQL belum
-   * dijalankan),fallsback ke daftar token lokal.
+   * Validasi token sesi hanya melalui Edge Function. Tidak ada fallback RPC
+   * atau daftar token lokal untuk mencegah enumerasi token saat server gagal.
    */
   async findActiveToken(code: string): Promise<{ token: ExamToken | null; source: 'server' | 'local' }> {
     const clean = code.trim();
     if (!clean) return { token: null, source: 'server' };
 
-    // Prefer the Edge Function because it does not depend on the PostgREST
-    // schema cache being refreshed after a database migration.
     try {
       const { data, error } = await supabase.functions.invoke('participant-mutations', {
         body: { action: 'validate-token', code: clean },
@@ -187,23 +183,11 @@ export const SupabaseService = {
           ? { token: mapTokenRow(token as Record<string, unknown>), source: 'server' }
           : { token: null, source: 'server' };
       }
-    } catch {
-      // Continue to the RPC for installations that already have the migration.
+    } catch (error) {
+      console.warn('Validasi token melalui Edge Function gagal:', error);
     }
 
-    try {
-      const { data, error } = await supabase.rpc('check_exam_token', { token_code: clean });
-      if (!error) {
-        const row = Array.isArray(data) ? data[0] : data;
-        if (row) return { token: mapTokenRow(row as Record<string, unknown>), source: 'server' };
-        return { token: null, source: 'server' };
-      }
-      console.warn('Fungsi check_exam_token belum tersedia, memakai daftar token lokal:', error);
-    } catch (err) {
-      console.warn('Fungsi check_exam_token gagal, memakai daftar token lokal:', err);
-    }
-
-    return { token: StorageService.findTokenByCode(clean) ?? null, source: 'local' };
+    return { token: null, source: 'server' };
   },
 
   // PARTICIPANTS SYNC

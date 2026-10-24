@@ -376,8 +376,8 @@ export function App() {
       return;
     }
 
-    // Token divalidasi di server (fungsi check_exam_token) agar kode token
-    // tidak bisa dibaca atau ditebak lewat API publik.
+    // Token divalidasi hanya di Edge Function agar kode token tidak bisa
+    // dibaca atau ditebak lewat API publik maupun fallback lokal.
     const { token, source } = await SupabaseService.findActiveToken(inputToken);
 
     if (!token) {
