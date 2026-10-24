@@ -64,6 +64,64 @@ async function isAdmin(req: Request): Promise<boolean> {
 const isFilled = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0;
 
+type TokenReservation = 'reserved' | 'invalid_token' | 'token_capacity_reached' | 'token_reservation_conflict' | 'token_lookup_failed';
+
+/** Atomically increments token usage, retrying if another start changed it first. */
+async function reserveTokenUsage(code: string, examType: string): Promise<TokenReservation> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data: token, error } = await service
+      .from('tokens')
+      .select('code, is_active, exam_type, used_count, max_capacity')
+      .eq('code', code)
+      .maybeSingle();
+    if (error) return 'token_lookup_failed';
+    if (!token || !token.is_active || token.exam_type !== examType) return 'invalid_token';
+
+    const usedCount = token.used_count ?? 0;
+    if (token.max_capacity && usedCount >= token.max_capacity) return 'token_capacity_reached';
+
+    const { data: reserved, error: reserveError } = await service
+      .from('tokens')
+      .update({ used_count: usedCount + 1 })
+      .eq('code', code)
+      .eq('is_active', true)
+      .eq('exam_type', examType)
+      .eq('used_count', usedCount)
+      .select('code')
+      .maybeSingle();
+    if (reserveError) return 'token_lookup_failed';
+    if (reserved) return 'reserved';
+  }
+
+  return 'token_reservation_conflict';
+}
+
+/** Compensates a reservation when participant creation fails, or a row is deleted. */
+async function releaseTokenUsage(code: string): Promise<boolean> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data: token, error } = await service
+      .from('tokens')
+      .select('used_count')
+      .eq('code', code)
+      .maybeSingle();
+    if (error || !token) return false;
+
+    const usedCount = token.used_count ?? 0;
+    if (usedCount <= 0) return true;
+    const { data: released, error: releaseError } = await service
+      .from('tokens')
+      .update({ used_count: usedCount - 1 })
+      .eq('code', code)
+      .eq('used_count', usedCount)
+      .select('code')
+      .maybeSingle();
+    if (releaseError) return false;
+    if (released) return true;
+  }
+
+  return false;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', {
     headers: {
@@ -160,29 +218,26 @@ serve(async (req) => {
         }
       }
 
-      // New participant rows can only be started with an active token. A
-      // completion is accepted only as a transition of an existing row.
-      if (!existing && (!admin || record.status !== 'in_progress')) {
+      // Public participants may create their own in-progress row after token
+      // validation. New rows cannot be submitted as already completed.
+      if (!existing && record.status !== 'in_progress') {
         return json({ error: 'invalid_participant_transition' }, 403);
-      }
-      if (!existing) {
-        const { data: token, error: tokenError } = await service
-          .from('tokens')
-          .select('code, is_active, exam_type, used_count, max_capacity')
-          .eq('code', record.tokenCode)
-          .maybeSingle();
-        if (tokenError || !token || !token.is_active || token.exam_type !== record.examType) {
-          return json({ error: 'invalid_token' }, 403);
-        }
-        if (token.max_capacity && token.used_count >= token.max_capacity) {
-          return json({ error: 'token_capacity_reached' }, 409);
-        }
       }
       if (record.status === 'completed' && !record.completedAt) {
         return json({ error: 'completed_at_required' }, 400);
       }
       if (record.status === 'in_progress' && record.completedAt) {
         return json({ error: 'invalid_completion_state' }, 400);
+      }
+
+      let reservedTokenCode: string | null = null;
+      if (!existing) {
+        const reservation = await reserveTokenUsage(record.tokenCode as string, record.examType as string);
+        if (reservation !== 'reserved') {
+          const status = reservation === 'token_capacity_reached' ? 409 : reservation === 'invalid_token' ? 403 : 503;
+          return json({ error: reservation }, status);
+        }
+        reservedTokenCode = record.tokenCode as string;
       }
 
       const row = {
@@ -200,8 +255,25 @@ serve(async (req) => {
         workstation_id: (record.workstationId as string | undefined) ?? 'LAB-CBT',
       };
 
-      const { error } = await service.from('participants').upsert([row], { onConflict: 'id' });
-      if (error) return json({ error: error.message }, 400);
+      const write = existing
+        ? admin
+          ? await service.from('participants').upsert([row], { onConflict: 'id' })
+          : await service.from('participants')
+            .update(row)
+            .eq('id', record.id as string)
+            .eq('status', 'in_progress')
+            .select('id')
+            .maybeSingle()
+        : await service.from('participants').insert([row]);
+      if (write.error) {
+        // New rows use INSERT so simultaneous retries cannot consume the same
+        // session twice under the participant's unique id.
+        if (reservedTokenCode) await releaseTokenUsage(reservedTokenCode);
+        return json({ error: write.error.message }, 400);
+      }
+      if (existing && !admin && !write.data) {
+        return json({ error: 'participant_state_changed' }, 409);
+      }
       return json({ ok: true });
     }
 
@@ -209,20 +281,31 @@ serve(async (req) => {
       const id = body.id;
       if (!isFilled(id)) return json({ error: 'invalid_id' }, 400);
 
-      if (!admin) {
-        const { data: existing } = await service
+      const { data: existing, error: lookupError } = await service
           .from('participants')
-          .select('status, completed_at')
+          .select('status, completed_at, token_code')
           .eq('id', id)
           .maybeSingle();
+      if (lookupError) return json({ error: 'participant_lookup_failed' }, 503);
 
-        if (!existing || existing.status !== 'in_progress' || existing.completed_at) {
-          return json({ error: 'forbidden_delete' }, 403);
-        }
+      if (!existing) return json({ error: admin ? 'participant_not_found' : 'forbidden_delete' }, admin ? 404 : 403);
+      if (!admin && (existing.status !== 'in_progress' || existing.completed_at)) {
+        return json({ error: 'forbidden_delete' }, 403);
       }
 
-      const { error } = await service.from('participants').delete().eq('id', id);
+      let deletion = service.from('participants').delete().eq('id', id);
+      if (!admin) {
+        // Keep the state predicate on DELETE so a concurrent completion cannot
+        // slip between the permission check and the actual delete.
+        deletion = deletion.eq('status', 'in_progress').is('completed_at', null);
+      }
+      const { data: removed, error } = await deletion.select('token_code').maybeSingle();
       if (error) return json({ error: error.message }, 400);
+      if (!removed) return json({ error: 'forbidden_delete' }, 403);
+      if (removed.token_code) {
+        const released = await releaseTokenUsage(removed.token_code);
+        if (!released) return json({ error: 'token_usage_sync_failed' }, 503);
+      }
       return json({ ok: true });
     }
 
