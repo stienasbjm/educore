@@ -131,7 +131,8 @@ const DEFAULT_TOKENS: ExamToken[] = [
 const DEFAULT_SETTINGS: EmbedSettings = {
   institutionName: 'STIE Nasional Banjarmasin',
   activeExamSchedule: 'both',
-  listeningAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+  // Do not expose the demo track as if it were the exam's listening audio.
+  listeningAudioUrl: '',
   listeningAudioEnabled: true,
   instructionToefl: 'Ujian TOEFL Like terdiri dari 3 seksi berurutan: Listening Comprehension (35 menit), Structure & Written Expression (25 menit), dan Reading Comprehension (55 menit). Waktu akan berjalan otomatis.',
   instructionTpa: 'Ujian Tes Potensi Akademik (TPA) dilaksanakan pada jadwal terpisah dengan durasi 60 menit. Jawablah soal kemampuan verbal, numerik, dan penalaran logika sebaik-baiknya.',
